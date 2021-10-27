@@ -3,25 +3,39 @@
 #include <PubSubClient.h>
 
 
+// Define the pins for the Arduino serial port
+#define RXD2 16
+#define TXD2 17
 
 String HOSTNAME = "ESP32_LORA";
 
+// WiFi Settings
 const char* ssid     = "ssid_here";
 const char* password = "password_here";
 const char *mqttServer = "mqtt_server_here";
+
+// MQTT Settings
 const int mqttPort = 1883;
 long lastReconnectAttempt = 0;
+
+// Serial Variables
+String inputString = "";         // a String to hold incoming data
+bool stringComplete = false;  // whether the string is complete
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
 void setup()
 {
+    // Define the USB serial port and start it
     Serial.begin(115200);
     delay(10);
 
-    // We start by connecting to a WiFi network
+    // Define the Arduino serial port and start it
+    Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
+    delay(10);
 
+    // We start by connecting to a WiFi network
     Serial.println();
     Serial.println();
     Serial.print("[INFO] Connecting to ");
@@ -44,12 +58,39 @@ void setup()
 
     Serial.println("[INFO] Connecting to MQTT server...");
     connectToMqtt();
-    
+
+    // reserve 200 bytes for the inputString:
+    inputString.reserve(200);
 }
 
 void loop() {
+  // Check to make sure the MQTT connection is live
   check_mqtt_connection();
 
+  // Check if we received a complete string through Serial2
+  if (stringComplete) {
+    // Publish the string to MQTT
+    publish_arduino_data(inputString);
+
+    // Clear the string:
+    inputString = "";
+    stringComplete = false;
+  }
+
+  // Check if there's anything in the Serial2 buffer
+  while (Serial2.available()) {
+    // Get the new byte:
+    char inChar = (char)Serial2.read();
+
+    // Add it to the inputString:
+    inputString += inChar;
+
+    // If the incoming character is a newline, set a flag so the main loop can
+    // do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
+  }
 }
 
 
@@ -169,6 +210,31 @@ void return_ping()
     Serial.print("Replying with: ");
     Serial.println(message);
     mqttClient.publish(topic_output, message_output);
+
+    yield();
+}
+
+void publish_arduino_data(String arduino_data) {
+    String message;
+    const size_t capacity = JSON_OBJECT_SIZE(4);
+    DynamicJsonDocument doc(capacity);
+
+    doc["data_1"] = arduino_data.substring(0, arduino_data.indexOf(','));
+    doc["data_2"] = arduino_data.substring(arduino_data.indexOf(',')+1, arduino_data.indexOf('\r'));
+
+    serializeJson(doc, message);
+
+    String topic = "data/" + HOSTNAME;
+
+    char topic_char_array[topic.length() + 1];
+    char message_char_array[message.length() + 1];
+
+    topic.toCharArray(topic_char_array, topic.length() + 1);
+    message.toCharArray(message_char_array, message.length() + 1);
+
+    Serial.print("Publishing to MQTT: ");
+    Serial.println(message);
+    mqttClient.publish(topic_char_array, message_char_array);
 
     yield();
 }
