@@ -1,7 +1,8 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
-
+#define uS_TO_S_FACTOR 1000000  //Conversion factor for micro seconds to seconds
+#define TIME_TO_SLEEP  10        //Time ESP32 will go to sleep (in seconds)
 
 // Define the pins for the Arduino serial port
 #define RXD2 16
@@ -25,15 +26,18 @@ bool stringComplete = false;  // whether the string is complete
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
+int loop_count = 0;
 void setup()
 {
     // Define the USB serial port and start it
     Serial.begin(115200);
     delay(10);
+    Serial.println("[INFO] Serial0 setup complete");
 
     // Define the Arduino serial port and start it
     Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
     delay(10);
+    Serial.println("[INFO] Serial2 setup complete");
 
     // We start by connecting to a WiFi network
     Serial.println();
@@ -61,9 +65,20 @@ void setup()
 
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
+
+    //Print the wakeup reason for ESP32
+    print_wakeup_reason();
+
 }
 
 void loop() {
+  loop_count++;
+  if (loop_count >= 5000) {
+      Serial.println("[INFO] Entering hibernate mode");
+      loop_count = 0;
+      hibernate_mode();
+  }
+
   // Check to make sure the MQTT connection is live
   check_mqtt_connection();
 
@@ -93,6 +108,37 @@ void loop() {
   }
 }
 
+
+void hibernate_mode() {
+    // Disable so even deeper sleep
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+
+    //Configure GPIO33 as ext0 wake up source for HIGH logic level
+//    esp_sleep_enable_ext0_wakeup(GPIO_NUM_33,1);
+
+    // Configure RTC timer to wakeup after TIME_TO_SLEEP seconds
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+    //Go to sleep now
+    esp_deep_sleep_start();
+}
+
+//Function that prints the reason by which ESP32 has been awaken from sleep
+void print_wakeup_reason(){
+    esp_sleep_wakeup_cause_t wakeup_reason;
+    wakeup_reason = esp_sleep_get_wakeup_cause();
+    switch(wakeup_reason)
+    {
+        case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("[WAKE] Wakeup caused by external signal using RTC_IO"); break;
+        case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("[WAKE] Wakeup caused by external signal using RTC_CNTL"); break;
+        case ESP_SLEEP_WAKEUP_TIMER : Serial.println("[WAKE] Wakeup caused by timer"); break;
+        case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("[WAKE] Wakeup caused by touchpad"); break;
+        case ESP_SLEEP_WAKEUP_ULP : Serial.println("[WAKE] Wakeup caused by ULP program"); break;
+        default : Serial.printf("[WAKE] Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    }
+}
 
 void setupMqtt(const char *mqttServer, const int mqttPort)
 {
