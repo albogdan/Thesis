@@ -4,12 +4,15 @@ long rand_num_agg_non_agg;  // Decides whether to send an aggregated or non-aggr
 long rand_num_payload;      // Decides which payload to send within the packet
 
 #define ESP_32_WAKEUP_PIN 4
+#define ESP_32_READY_PIN 2
 
 void setup() {
   Serial.begin(115200);
   // put your setup code here, to run once:
   randomSeed(analogRead(0));
+
   pinMode(ESP_32_WAKEUP_PIN, OUTPUT);
+  pinMode(ESP_32_READY_PIN, INPUT);
   digitalWrite(ESP_32_WAKEUP_PIN, LOW);
 }
 
@@ -18,8 +21,11 @@ void loop() {
   digitalWrite(ESP_32_WAKEUP_PIN, HIGH);
 
   // Wait for the ESP32 to initialize
-  delay(6000);
-
+  while (!digitalRead(ESP_32_READY_PIN)) {
+    delay(100);
+  }
+  delay(3000);
+  
   // Send 10 requests
   for (int i = 0; i<10; i++) {
     // Generate a random number from 0 to 1

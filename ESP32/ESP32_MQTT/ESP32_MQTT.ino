@@ -11,6 +11,7 @@
 
 #define SLEEP_TIMER_SECONDS 8 // Amount of time to wait until trying to go into hibernation mode
 #define RTC_GPIO_WAKEUP_PIN GPIO_NUM_4
+#define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_5
 
 
 // Define sensor types
@@ -157,6 +158,8 @@ void setup()
     initialize_sleep_timer(SLEEP_TIMER_SECONDS);
 
     Serial.println("[SETUP] Boot sequence complete.");
+    pinMode(ARDUINO_SIGNAL_READY_PIN, OUTPUT);
+    digitalWrite(ARDUINO_SIGNAL_READY_PIN, HIGH);
 }
 
 void update_current_local_time(){
@@ -236,6 +239,8 @@ void parse_input_string(byte *input_byte_array) {
         
         print_packet(packet);
         publish_packet_to_mqtt(packet);
+        free(packet.node_data_fields);
+        free(packet.node_data);
         
     // Parse aggregated messages here
     } else {
@@ -254,6 +259,8 @@ void parse_input_string(byte *input_byte_array) {
         
         print_packet(packet);
         publish_packet_to_mqtt(packet);
+        free(packet.node_data_fields);
+        free(packet.node_data);
     }
 }
 
@@ -467,6 +474,9 @@ void publish_arduino_data(String arduino_data) {
 /* --------------------- BEGIN SLEEP RELATED FUNCTIONS --------------------- */
 
 void hibernate_mode() {
+    // Tell Arduino we're turning off
+    digitalWrite(ARDUINO_SIGNAL_READY_PIN, LOW);
+
     // Disable so even deeper sleep
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
