@@ -1,0 +1,50 @@
+<!-- HTTP_HEAD -->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+<!-- /HTTP_HEAD -->
+<!-- HTTP_STYLE -->
+		<link rel="stylesheet" href="index.css">
+<!-- /HTTP_STYLE -->
+<!-- HTTP_SCRIPT -->
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+<!-- /HTTP_SCRIPT -->
+<!-- HTTP_HEAD_END -->
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+		<!-- <div class='wrap ql qinv'> -->
+<!-- /HTTP_HEAD_END -->
+			<!-- HTTP_ITEM -->
+			<h3>Connect to MQTT</h3><hr>
+			<!--div><b>Connect to WiFi</b><div role='img' aria-label='{r}%' title='{r}%' class='q q-{q} {i}'></div></div>-->
+			<!-- /HTTP_ITEM -->
+			<!-- HTTP_FORM_START -->
+			<form method='get' action='mqttSave'>
+				<div>
+					<label for='server_ip'>Server IP Address</label><br/>
+					<input id='server_ip' name='server_ip' length=32 placeholder='Enter Server IP'><br/>
+				</div>
+				<div>
+					<label for='port'>Server Port</label>
+					<input id='port' name='port' length=64 type='port' placeholder='Enter Server Port'><br/>
+				</div>
+				<br>
+				<div><button type='submit'>Save</button></div>
+			</form>
+			<br><hr>
+			<div>
+				<a href='/'><button>Back</button></a><br/>
+			</div>
+<!-- HTTP_END -->
+    </div>
+	</body>
+</html>
+<!-- /HTTP_END -->

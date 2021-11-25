@@ -1,0 +1,65 @@
+<!-- HTTP_HEAD -->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+<!-- /HTTP_HEAD -->
+<!-- HTTP_STYLE -->
+		<link rel="stylesheet" href="index.css">
+<!-- /HTTP_STYLE -->
+<!-- HTTP_SCRIPT -->
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+<!-- /HTTP_SCRIPT -->
+<!-- HTTP_HEAD_END -->
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3>ESP32 Config Portal</h3><hr><br>
+		<!-- <div class='wrap ql qinv'> -->
+<!-- /HTTP_HEAD_END -->
+			<!-- HTTP_PORTAL_OPTIONS -->
+			<!-- /HTTP_PORTAL_OPTIONS -->
+			<!-- HTTP_PORTAL_MENU[] -->
+			<div><a href='wifi.html'><button>Configure WiFi</button></a></div>
+			<div><a href='mqtt.html'><button>Configure MQTT</button></a></div>
+			<div><a href='info.html'><button>Station Info</button></a></div>
+			<div><form action='/restart' method='post'><button class='Y'>Restart</button></form></div>
+			<div><form action='/clearall' method='post'><button class='R'>Clear All Credentials</button></form></div>
+			<!-- /HTTP_PORTAL_MENU -->
+			<!-- HTTP_HELP -->
+		 		<br/><h3>Available Pages</h3><hr>
+		 		<table class='table'>
+		 		<thead><tr><th>Page</th><th>Function</th></tr></thead><tbody>
+		 		<tr><td><a href='/'>/</a></td>
+		 		<td>Menu page.</td></tr>
+		 		<tr><td><a href='/wifi'>/wifi</a></td>
+		 		<td>Show WiFi scan results and enter WiFi configuration.(/0wifi noscan)</td></tr>
+		 		<tr><td><a href='/wifisave'>/wifisave</a></td>
+		 		<td>Save WiFi configuration information and configure device. Needs variables supplied.</td></tr>
+		 		<tr><td><a href='/close'>/close</a></td>
+		 		<td>Close the configuration server and configuration WiFi network.</td></tr>
+		 		<tr><td><a href='/info'>/info</a></td>
+		 		<td>Information page</td></tr>
+ 				<tr><td><a href='/close'>/close</a></td>
+ 				<td>Close the captiveportal popup,configportal will remain active</td></tr>
+		 		<tr><td><a href='/exit'>/exit</a></td>
+		 		<td>Exit Config Portal, configportal will close</td></tr>
+		 		<tr><td><a href='/restart'>/restart</a></td>
+		 		<td>Reboot the device</td></tr>
+		 		<tr><td><a href='/erase'>/erase</a></td>
+		 		<td>Erase WiFi configuration and reboot Device. Device will not reconnect to a network until new WiFi configuration data is entered.</td></tr>
+		 		</table>
+			<!-- /HTTP_HELP -->
+
+
+<!-- HTTP_END -->
+    </div>
+	</body>
+</html>
+<!-- /HTTP_END -->
