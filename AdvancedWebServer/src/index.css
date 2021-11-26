@@ -30,7 +30,7 @@ body {
 .wrap {
    text-align:left;
    display:inline-block;
-   min-width:260px;
+   min-width:380px;
    max-width:500px;
 }
 div,
@@ -40,6 +40,14 @@ input {
    /*width: 100%;*/
    margin:5px 0;
    box-sizing: border-box;
+}
+select {
+   padding: 5px;
+   font-size: 1em;
+   width: 100%;
+   /* margin:5px 0; */
+   box-sizing: border-box;
+   line-height: 2.4rem;
 }
 input,button,.msg{
    border-radius:.3rem;

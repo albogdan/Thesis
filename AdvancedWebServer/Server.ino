@@ -1,4 +1,4 @@
-
+#include "esp_wpa2.h" // For WPA2 Enterprise
 #include <FS.h>
 #include <SPIFFS.h>
 
@@ -12,24 +12,41 @@ void connectToWiFi()
 {
   WiFi.hostname(HOSTNAME);
   WiFi.mode(WIFI_MODE_APSTA);
-  connectToSTAWiFi();
-  connectToAPWiFi();
+//  connectToSTAWiFi();
+//  connectToAPWiFi();
   
-//  if (connectToSTAWiFi()) {
-//    connectToAPWiFi();
-//  } else {
-//    WiFi.disconnect();
-//    WiFi.mode(WIFI_MODE_AP);
-//    connectToAPWiFi();
-//  }
+  if (connectToSTAWiFi()) {
+    connectToAPWiFi();
+  } else {
+    WiFi.disconnect();
+    WiFi.mode(WIFI_MODE_AP);
+    connectToAPWiFi();
+  }
 }
 
 bool connectToSTAWiFi(){
   Serial.println("[INFO] Connecting to STA WiFi");
   WiFiCredentials credentials;
-  if (getWiFiCredentials(&credentials)) {
+  if (getSTAWiFiCredentials(&credentials)) {
     Serial.println("[INFO] Got WiFi credentials. Starting AP_STA mode");
-    WiFi.begin(credentials.ssid, credentials.password);
+
+    
+    if (strlen(credentials.identity) == 0) { // Connect to WPA2 Personal WiFi network
+      Serial.println("Connecting to WPA2 Personal");
+      WiFi.begin(credentials.ssid, credentials.password);
+    } else { // Connect to WPA2 EnterpriseWiFi network
+      Serial.println("Connecting to WPA2 Enterprise");
+      // WPA2 enterprise magic starts here
+//      WiFi.disconnect(true);
+//      WiFi.mode(WIFI_STA);
+      esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)credentials.identity, strlen(credentials.identity));
+      esp_wifi_sta_wpa2_ent_set_username((uint8_t *)credentials.identity, strlen(credentials.identity));
+      esp_wifi_sta_wpa2_ent_set_password((uint8_t *)credentials.password, strlen(credentials.password));
+      esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+      esp_wifi_sta_wpa2_ent_enable(&config);
+      // WPA2 enterprise magic ends here
+      WiFi.begin(credentials.ssid);
+    }
     unsigned int timeout = 4 * WIFI_CONNECT_TIMEOUT_SECONDS;
     while (WiFi.status() != WL_CONNECTED && (timeout > 0))
     {
@@ -37,6 +54,7 @@ bool connectToSTAWiFi(){
         Serial.print(".");
         timeout -=1;
     }
+    
     Serial.println('\n');
     Serial.print("[INFO] Connected to ");
     Serial.println(WiFi.SSID()); // Tell us what network we're connected to
@@ -50,17 +68,21 @@ bool connectToSTAWiFi(){
 }
 void connectToAPWiFi() {
   Serial.println("[INFO] Creating AP WiFi");
-  WiFi.softAP(ap_ssid, ap_password);
+  WiFiCredentials credentials;
+  if (getAPWiFiCredentials(&credentials)) {
+    WiFi.softAP(credentials.ssid, credentials.password);
+  } else {
+    WiFi.softAP(ap_ssid, ap_password);
+  }
   Serial.print("[INFO] AP IP address:\t");
   Serial.println(WiFi.softAPIP()); // Send the IP address of the ESP32 AP
 }
 
-
-bool getWiFiCredentials(WiFiCredentials *credentials) {
-  if (SPIFFS.exists("/wifi_config.json")) {  
+bool getAPWiFiCredentials(WiFiCredentials *credentials) {
+  if (SPIFFS.exists("/ap_wifi_config.json")) {  
     //File exists, reading and loading
     Serial.println("reading config file");
-    File configFile = SPIFFS.open("/wifi_config.json", "r");
+    File configFile = SPIFFS.open("/ap_wifi_config.json", "r");
     
     if (configFile) {
       Serial.println("[INFO] Opened config file");
@@ -92,12 +114,11 @@ bool getWiFiCredentials(WiFiCredentials *credentials) {
   }
   return false;
 }
-
-bool saveWiFiCredentials(WiFiCredentials *credentials) {
-//  if (SPIFFS.exists("/wifi_config.json")) {
+bool setAPWiFiCredentials(WiFiCredentials *credentials) {
+//  if (SPIFFS.exists("/ap_wifi_config.json")) {
     //File exists, reading and loading
     Serial.println("reading config file");
-    File configFile = SPIFFS.open("/wifi_config.json", "w");
+    File configFile = SPIFFS.open("/ap_wifi_config.json", "w");
     
     if (configFile) {
       Serial.println("[INFO] Opened WiFi config file");
@@ -108,7 +129,76 @@ bool saveWiFiCredentials(WiFiCredentials *credentials) {
       serializeJson(json, Serial);
       serializeJson(json, configFile);
       configFile.close();
-      connectToSTAWiFi();
+      ESP.restart();
+      return true;
+    }
+//  }
+  Serial.println("Returning false");
+  return false; 
+}
+
+bool getSTAWiFiCredentials(WiFiCredentials *credentials) {
+  if (SPIFFS.exists("/sta_wifi_config.json")) {  
+    //File exists, reading and loading
+    Serial.println("reading config file");
+    File configFile = SPIFFS.open("/sta_wifi_config.json", "r");
+    
+    if (configFile) {
+      Serial.println("[INFO] Opened config file");
+      size_t size = configFile.size();
+      // Allocate a buffer to store contents of the file.
+      std::unique_ptr<char[]> buf(new char[size]);
+
+      configFile.readBytes(buf.get(), size);
+      DynamicJsonDocument json(1024);
+      auto deserializeError = deserializeJson(json, buf.get());
+      serializeJson(json, Serial);
+      if ( ! deserializeError ) {
+        Serial.println("\nparsed json");
+        strcpy(credentials->ssid, json["ssid"]);
+        strcpy(credentials->password, json["password"]);
+        if (json.containsKey("identity")) {
+          strcpy(credentials->identity, json["identity"]);
+        } else {
+          credentials->identity[0] = 0;
+        }
+        configFile.close();
+        Serial.print("SSID: ");
+        Serial.println(credentials -> ssid);
+        Serial.print("Password: ");
+        Serial.println(credentials -> password);
+        return true;
+      } else {
+        Serial.println("[INFO] Failed to load JSON config");
+        configFile.close();
+        return false;
+      }
+    }
+    Serial.println("[INFO] No config file found");
+  }
+  return false;
+}
+
+bool setSTAWiFiCredentials(WiFiCredentials *credentials) {
+//  if (SPIFFS.exists("/sta_wifi_config.json")) {
+    //File exists, reading and loading
+    Serial.println("reading config file");
+    File configFile = SPIFFS.open("/sta_wifi_config.json", "w");
+    
+    if (configFile) {
+      Serial.println("[INFO] Opened WiFi config file");
+      DynamicJsonDocument json(1024);
+      json["ssid"] = credentials->ssid;
+      json["password"] = credentials->password;
+      if (strlen(credentials->identity) != 0) {
+        json["identity"] = credentials->identity;
+      }
+      
+      serializeJson(json, Serial);
+      serializeJson(json, configFile);
+      configFile.close();
+      WiFi.disconnect();
+      connectToWiFi();
       return true;
     }
 //  }
@@ -126,6 +216,8 @@ bool saveMQTTCredentials(MQTTCredentials *credentials) {
       DynamicJsonDocument json(1024);
       json["server_ip"] = credentials->server_ip;
       json["port"] = credentials->port;
+      json["username"] = credentials->username;
+      json["password"] = credentials->password;
       
       serializeJson(json, Serial);
       serializeJson(json, configFile);
@@ -156,6 +248,9 @@ bool getMQTTCredentials(MQTTCredentials *credentials) {
         Serial.println("\nparsed json");
         strcpy(credentials->server_ip, json["server_ip"]);
         strcpy(credentials->port, json["port"]);
+        strcpy(credentials->username, json["username"]);
+        strcpy(credentials->password, json["password"]);
+        
         configFile.close();
         Serial.print("Server IP: ");
         Serial.println(credentials -> server_ip);
@@ -183,10 +278,11 @@ void httpServerSetupAndStart()
     Serial.println("[INFO] Setting up web server");
     // Setup endpoints
     server.on("/loadInfo", HTTP_GET, handleInfoPageLoad);
-    server.on("/wifiSave", HTTP_GET, handleSetWiFiCredentials);
+    server.on("/wifiSaveSTA", HTTP_GET, handleSetSTAWiFiCredentials);
+    server.on("/wifiSaveAP", HTTP_GET, handleSetAPWiFiCredentials);
     server.on("/mqttSave", HTTP_GET, handleSetMQTTCredentials);
     server.on("/restart", HTTP_POST, handleESPRestart);
-    server.on("/clearall", HTTP_POST, handleClearAllCredentials);
+    server.on("/factoryreset", HTTP_POST, handleFactoryReset);
 
     server.onNotFound([]() {                                  // If the client requests any URI
         if (!handleFileRead(server.uri()))                    // send it if it exists
@@ -203,26 +299,55 @@ void httpServerSetupAndStart()
     server.begin();
 }
 
-void handleSetWiFiCredentials() {
+void handleSetSTAWiFiCredentials() {
   WiFiCredentials credentials;
   server.arg("ssid").toCharArray(credentials.ssid, server.arg("ssid").length() + 1);
   server.arg("password").toCharArray(credentials.password, server.arg("password").length() + 1);
+  Serial.print("SERVER ARG IDENTITY: ");
+  Serial.println(server.arg("identity"));
+  if (server.arg("identity") != NULL) {
+    Serial.println("SETTING IDENTITY");
+    server.arg("identity").toCharArray(credentials.identity, server.arg("identity").length() + 1);
+  } else {
+    credentials.identity[0] = 0;
+  }
+  Serial.print("Identity len: ");
+  Serial.println(strlen(credentials.identity));
   Serial.print("SSID: ");
   Serial.println(credentials.ssid);
   Serial.print("Password: ");
   Serial.println(credentials.password);
-  if (saveWiFiCredentials(&credentials))
-    Serial.println("[INFO] Saved WiFi credentials.");
+  if (setSTAWiFiCredentials(&credentials))
+    Serial.println("[INFO] Saved STA WiFi credentials.");
   else
-    Serial.println("[INFO] Failed to save WiFi credentials.");
+    Serial.println("[INFO] Failed to save STA WiFi credentials.");
   server.sendHeader("Location","/");
   server.send(303);
 }
+void handleSetAPWiFiCredentials() {
+  WiFiCredentials credentials;
+  
+  server.arg("ssid").toCharArray(credentials.ssid, server.arg("ssid").length() + 1);
+  server.arg("password").toCharArray(credentials.password, server.arg("password").length() + 1);
 
+  Serial.print("SSID: ");
+  Serial.println(credentials.ssid);
+  Serial.print("Password: ");
+  Serial.println(credentials.password);
+  if (setAPWiFiCredentials(&credentials))
+    Serial.println("[INFO] Saved AP WiFi credentials.");
+  else
+    Serial.println("[INFO] Failed to save AP WiFi credentials.");
+  server.sendHeader("Location","/");
+  server.send(303);
+}
 void handleSetMQTTCredentials() {
   MQTTCredentials credentials;
   server.arg("server_ip").toCharArray(credentials.server_ip, server.arg("server_ip").length() + 1);
   server.arg("port").toCharArray(credentials.port, server.arg("port").length() + 1);
+  server.arg("username").toCharArray(credentials.username, server.arg("username").length() + 1);
+  server.arg("password").toCharArray(credentials.password, server.arg("password").length() + 1);
+  
   Serial.print("Server IP: ");
   Serial.println(credentials.server_ip);
   Serial.print("Port: ");
@@ -238,28 +363,73 @@ void handleSetMQTTCredentials() {
 void handleInfoPageLoad() {
   Serial.println("[INFO] Handling Info Page Load");
   String jsonMap;
-  const size_t capacity = JSON_OBJECT_SIZE(8);
+  const size_t capacity = JSON_OBJECT_SIZE(20);
   DynamicJsonDocument doc(capacity);
+
+  // STA Information
   if (WiFi.status() == WL_CONNECTED)
     doc["sta_status"] = "Connected";
   else
-    doc["sta_status"] = "Disconnected";    
+    doc["sta_status"] = "Disconnected";
+  WiFiCredentials sta_credentials;
+  if (getSTAWiFiCredentials(&sta_credentials)) {
+    if (strlen(sta_credentials.identity) == 0) {
+      doc["sta_encrypt_mode"] = "WPA2 Personal";
+    } else {
+      doc["sta_encrypt_mode"] = "WPA2 Enterprise";
+    }
+  } else {
+    doc["sta_encrypt_mode"] = "N/A";
+  }
   doc["sta_ip_address"] = WiFi.localIP();
+
+  // AP Information
   doc["ap_ip_address"] = WiFi.softAPIP();
+  WiFiCredentials ap_credentials;
+  if (getAPWiFiCredentials(&ap_credentials)) {
+    doc["ap_ssid"] = ap_credentials.ssid;
+    doc["ap_password"] = ap_credentials.password;
+  } else {
+    doc["ap_ssid"] = ap_ssid;
+    doc["ap_password"] = ap_password;
+  }
+
+  // MQTT Information
+  if (mqtt_connection_made) {
+    doc["mqtt_status"] = "Connected";
+  } else {
+    doc["mqtt_status"] = "Disconnected";
+  }
+  MQTTCredentials mqtt_credentials;
+  if (getMQTTCredentials(&mqtt_credentials)) {
+    doc["mqtt_ip"] = mqtt_credentials.server_ip;
+    doc["mqtt_port"] = mqtt_credentials.port;
+  } else {
+    doc["mqtt_ip"] = "0.0.0.0";
+    doc["mqtt_port"] = "N/A";
+  }
+  
+  // Other Information
   doc["mac_address"] = WiFi.macAddress();
   doc["rssi"] = WiFi.RSSI();
+  
   serializeJson(doc, jsonMap);
   server.send(200, "text/json", jsonMap);
 }
 
 void handleESPRestart(){
   Serial.println("[INFO] Restarting ESP32.");
+  server.sendHeader("Location","/");
+  server.send(303);
   ESP.restart();
 }
 
-void handleClearAllCredentials(){
-  if (SPIFFS.exists("/wifi_config.json")) {
-    SPIFFS.remove("/wifi_config.json");
+void handleFactoryReset(){
+  if (SPIFFS.exists("/sta_wifi_config.json")) {
+    SPIFFS.remove("/sta_wifi_config.json");
+  }
+  if (SPIFFS.exists("/ap_wifi_config.json")) {
+    SPIFFS.remove("/ap_wifi_config.json");
   }
   if (SPIFFS.exists("/mqtt_config.json")) {
     SPIFFS.remove("/mqtt_config.json");
@@ -267,6 +437,7 @@ void handleClearAllCredentials(){
   
   server.sendHeader("Location","/");
   server.send(303);
+  ESP.restart();
 }
 
 

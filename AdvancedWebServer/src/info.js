@@ -2,14 +2,23 @@ function setText(text) {
     console.log("Calling settext");
     var jsonObject = JSON.parse(text);
     document.getElementById("sta_status").textContent = jsonObject.sta_status;
+    document.getElementById("sta_encrypt_mode").textContent = jsonObject.sta_encrypt_mode;
     document.getElementById("sta_ip_address").textContent = jsonObject.sta_ip_address;
+    
     document.getElementById("ap_ip_address").textContent = jsonObject.ap_ip_address;
+    document.getElementById("ap_ssid").textContent = jsonObject.ap_ssid;
+    document.getElementById("ap_password").textContent = jsonObject.ap_password;
+
+    document.getElementById("mqtt_status").textContent = jsonObject.mqtt_status;
+    document.getElementById("mqtt_ip").textContent = jsonObject.mqtt_ip;
+    document.getElementById("mqtt_port").textContent = jsonObject.mqtt_port;
+    
+    
     document.getElementById("mac_address").textContent = jsonObject.mac_address;
     document.getElementById("rssi").textContent = jsonObject.rssi;
 }
 
 function pageLoad() {
-    console.log("Calling info page load");
     var xhttp = new XMLHttpRequest();
   
     // Callback

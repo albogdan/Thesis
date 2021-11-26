@@ -1,4 +1,4 @@
-#include <ESP32Ping.h>
+///#include <ESP32Ping.h>
 
 
 long lastReconnectAttempt = 0;
@@ -9,13 +9,13 @@ bool setupAndConnectToMqtt() {
   MQTTCredentials credentials;
   if (getMQTTCredentials(&credentials)) {
     Serial.println("[SETUP] Checking if MQTT server exists");
-    bool ping_success = WiFi.ping(credentials.server_ip); //Ping 3 times
+    bool ping_success = true;//WiFi.ping(credentials.server_ip); //Ping 3 times
     if (ping_success) {
       Serial.println("[SETUP] Setting up MQTT server...");
       setupMqtt(credentials.server_ip, credentials.port);
     
       Serial.println("[SETUP] Connecting to MQTT server...");
-      return connectToMqtt();
+      return connectToMqtt(credentials.username, credentials.password);
     } else {
       Serial.println("[ERROR] MQTT Server Ping Failed");
       return false;
@@ -33,13 +33,13 @@ void setupMqtt(char *mqttServer, char *mqttPort)
     mqttClient.setSocketTimeout(5);
 }
 
-boolean connectToMqtt()
+boolean connectToMqtt(char *username, char *password)
 {
     char hostname_char[HOSTNAME.length() + 1];
     HOSTNAME.toCharArray(hostname_char, HOSTNAME.length() + 1);
 
     Serial.println("[SETUP] Connecting to MQTT...");
-    if (mqttClient.connect(hostname_char))
+    if (mqttClient.connect(hostname_char, username, password))
     { //, mqttUser, mqttPassword )) {
         Serial.print("[INFO] MAC: ");
         Serial.println(WiFi.macAddress());
@@ -56,7 +56,7 @@ boolean connectToMqtt()
     }
 }
 
-
+/*
 void check_mqtt_connection()
 {
     if (!mqttClient.connected())
@@ -77,6 +77,7 @@ void check_mqtt_connection()
         mqttClient.loop();
     }
 }
+*/
 
 void mqttSubscribeToTopics(PubSubClient *mqttClient)
 {
