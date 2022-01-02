@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert" onload="pageLoad()">
+		<div class='wrap'>
+			<h3>Current Status</h3><hr>
+			<dl>
+				<div><dt>STA Status</dt><dd id="sta_status">N/A</dd></div>
+				<div><dt>STA Encryption Mode</dt><dd id="sta_encrypt_mode">N/A</dd></div>
+				<div><dt>STA IP Address</dt><dd id="sta_ip_address">N/A</dd></div>
+				<hr>
+				<div><dt>AP IP Address</dt><dd id="ap_ip_address">N/A</dd></div>
+				<div><dt>AP SSID</dt><dd id="ap_ssid">N/A</dd></div>
+				<div><dt>AP Password</dt><dd id="ap_password">N/A</dd></div>
+				<hr>
+				<div><dt>MQTT Status</dt><dd id="mqtt_status">N/A</dd></div>
+				<div><dt>MQTT Server IP</dt><dd id="mqtt_ip">N/A</dd></div>
+				<div><dt>MQTT Port</dt><dd id="mqtt_port">N/A</dd></div>
+				<hr>
+				<div><dt>MAC Address</dt><dd id="mac_address">N/A</dd></div>
+				<div><dt>RSSI</dt><dd id="rssi">N/A</dd></div>
+			</dl>
+			<Hr><br/>
+			<div><a href='/'><button>Back</button></a><br/></div>
+    </div>
+	<script src="info.js"></script>
+	</body>
+</html>
