@@ -13,7 +13,7 @@ boolean connectToMqtt()
     while (!mqttClient.connected())
     {
         Serial.println("[SETUP] Connecting to MQTT...");
-        if (mqttClient.connect(hostname_char))
+        if (mqttClient.connect(hostname_char, "roger", "password"))
         { //, mqttUser, mqttPassword )) {
             Serial.print("[INFO] MAC: ");
             Serial.println(WiFi.macAddress());

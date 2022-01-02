@@ -23,6 +23,7 @@ typedef struct packet {
   unsigned int message_length;
   int *node_data_fields;
   int *node_data;
+  long data_value;
 } Packet;
 
 /* Questions:

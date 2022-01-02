@@ -99,7 +99,6 @@ void loop() {
   // Check if we received a complete string through Serial2
   if (byte_array_complete) {
     // Publish the string to MQTT
-//    publish_arduino_data(input_byte_array);
     parse_input_string(input_byte_array);
 
     // Clear the byte array: reset the index pointer
