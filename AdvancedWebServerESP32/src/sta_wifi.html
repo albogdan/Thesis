@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3 id="wifi_header">Connect to WiFi</h3><hr>
+			<div class="" id="encryption_select">
+				<select class="form-group" id="selectWiFiEncryptionType">
+					<option value="null">Select Encryption Type</option>
+					<option value="personal">WPA2 Personal</option>
+					<option value="enterprise">WPA2 Enterprise</option>
+				</select>
+			</div>
+			<div class="form-group" id="personal">
+				<form method='get' action='wifiSaveSTA'>
+					<div>
+						<label for='ssid'>SSID</label><br/>
+						<input id='ssid' name='ssid' length=32 placeholder='Enter SSID' required><br/>
+					</div>
+					<div>
+						<label for='password'>Password</label>
+						<input id='password' name='password' length=64 type='password' placeholder='Enter password' required><br/>
+					</div>
+					<br>
+					<div><button type='submit'>Save</button></div>
+				</form>
+			</div>
+			<div class="form-group" id="enterprise">
+				<form method='get' action='wifiSaveSTA'>
+					<div>
+						<label for='ssid'>SSID</label><br/>
+						<input id='ssid' name='ssid' length=32 placeholder='Enter SSID' required><br/>
+					</div>
+					<div>
+						<label for='identity'>Identity</label><br/>
+						<input id='identity' name='identity' length=64 placeholder='Enter Identity' required><br/>
+					</div>
+					<div>
+						<label for='password'>Password</label>
+						<input id='password' name='password' length=64 type='password' placeholder='Enter password' required><br/>
+					</div>
+					<br>
+					<div><button type='submit'>Save</button></div>
+				</form>
+			</div>
+			<br><hr>
+			<div>
+				<a href='/'><button>Back</button></a><br/>
+			</div>
+    </div>
+	<script src="jquery-3.6.0.min.js"></script>
+	<script src="sta_wifi.js"></script>
+	</body>
+</html>

@@ -180,6 +180,7 @@ void loop() {
 
   // Check if we received a complete string through Serial2
   if (byte_array_complete) {
+    // Publish the string to MQTT
     parse_input_string(input_byte_array);
 
     // Clear the byte array: reset the index pointer
@@ -202,8 +203,6 @@ void loop() {
       byte_array_complete = true;
     }
   }
-  captivePortal.handleClient();
   mqttClient.loop();
   
 }
-
