@@ -1,4 +1,14 @@
+#pragma once
+
 #include <ArduinoJson.h>
+#include <FS.h>
+#include <SPIFFS.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <PubSubClient.h>
+
 const char *ap_ssid = "ESP32AP";
 const char *ap_password = "12344321";
 typedef struct wifi_credentials{

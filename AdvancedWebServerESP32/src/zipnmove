@@ -1,1 +1,2 @@
+mkdir ../data
 gzip -k -9 *.html *.css *.js && mv *.gz ../data

@@ -79,6 +79,66 @@ void check_mqtt_connection()
 }
 */
 
+
+bool setMQTTCredentials(MQTTCredentials *credentials) {
+    // Creating new file
+    File configFile = SPIFFS.open("/mqtt_config.json", "w");
+    
+    if (configFile) {
+      Serial.println("[INFO] Opened MQTT config file");
+      DynamicJsonDocument json(1024);
+      json["server_ip"] = credentials->server_ip;
+      json["port"] = credentials->port;
+      json["username"] = credentials->username;
+      json["password"] = credentials->password;
+      
+      //serializeJson(json, Serial);
+      serializeJson(json, configFile);
+      configFile.close();
+      return true;
+    }
+  Serial.println("Returning false");
+  return false; 
+}
+
+bool getMQTTCredentials(MQTTCredentials *credentials) {
+  if (SPIFFS.exists("/mqtt_config.json")) {  
+    //File exists, reading and loading
+    File configFile = SPIFFS.open("/mqtt_config.json", "r");
+    
+    if (configFile) {
+      Serial.println("[INFO] Opened config file");
+      size_t size = configFile.size();
+      // Allocate a buffer to store contents of the file.
+      std::unique_ptr<char[]> buf(new char[size]);
+
+      configFile.readBytes(buf.get(), size);
+      DynamicJsonDocument json(1024);
+      auto deserializeError = deserializeJson(json, buf.get());
+      //serializeJson(json, Serial);
+      if ( ! deserializeError ) {
+        strcpy(credentials->server_ip, json["server_ip"]);
+        strcpy(credentials->port, json["port"]);
+        strcpy(credentials->username, json["username"]);
+        strcpy(credentials->password, json["password"]);
+        
+        configFile.close();
+        Serial.print("[INFO] Server IP: ");
+        Serial.println(credentials -> server_ip);
+        Serial.print("[INFO] Port: ");
+        Serial.println(credentials -> port);
+        return true;
+      } else {
+        Serial.println("[INFO] Failed to load JSON config");
+        configFile.close();
+        return false;
+      }
+    }
+    Serial.println("[INFO] No config file found");
+  }
+  return false;
+}
+
 void mqttSubscribeToTopics(PubSubClient *mqttClient)
 {
     mqttClient->subscribe("ping");
