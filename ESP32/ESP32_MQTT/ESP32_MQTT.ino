@@ -24,23 +24,30 @@ void setup()
     delay(10);
     Serial.println("[SETUP] Serial2 setup complete");
 
-    // We start by connecting to a WiFi network
-    Serial.println();
-    Serial.println();
-    Serial.print("[SETUP] Connecting to ");
-    Serial.println(ssid);
+    // Load the MQTT config from SPIFFS
+    load_mqtt_config();
 
-    WiFi.begin(ssid, password);
+    // Add the MQTT pages to the Captive Portal
+    captivePortal.join({mqtt_settings, mqtt_save});
 
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
+    captivePortal.on(AUX_SETTING_URI, loadParams);
+    captivePortal.on(AUX_SAVE_URI, saveParams);
+
+
+    // Restore configured MQTT broker settings
+    PageArgument  args;
+    AutoConnectAux& mqtt_setting = *captivePortal.aux(AUX_SETTING_URI);
+    loadParams(mqtt_setting, args);
+
+    // Now we connect to a WiFi network
+    Serial.println("[SETUP] Setting up the Captive WiFi Portal");
+    if (captivePortal.begin()) {
+      Serial.println("");
+      Serial.println("[INFO] WiFi connected");
+      Serial.print("[INFO] IP address: ");
+      Serial.println(WiFi.localIP());  
     }
-
-    Serial.println("");
-    Serial.println("[INFO] WiFi connected");
-    Serial.print("[INFO] IP address: ");
-    Serial.println(WiFi.localIP());
+    
 
     Serial.println("[SETUP] Setting up MQTT server...");
     setupMqtt(mqttServer, mqttPort);
@@ -81,10 +88,84 @@ void setup()
     Serial.println("[INFO] Initializing sleep timer");
     initialize_sleep_timer(SLEEP_TIMER_SECONDS);
 
-    Serial.println("[SETUP] Boot sequence complete.");
     pinMode(ARDUINO_SIGNAL_READY_PIN, OUTPUT);
     digitalWrite(ARDUINO_SIGNAL_READY_PIN, HIGH);
+    Serial.println("[SETUP] Boot sequence complete.");
 }
+
+// Retreive the value of each element entered by '/mqtt_setting'.
+String saveParams(AutoConnectAux& aux, PageArgument& args) {
+  mqttserver.value.trim();
+  mqttport.value.trim();
+
+  Serial.println("saving config");
+  if (SPIFFS.begin()) {
+    Serial.println("mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "w");
+      if (configFile) {
+        Serial.println("opened config file");
+        DynamicJsonDocument json(1024);
+        json["mqtt_server"] = mqttserver.value.c_str();
+        json["mqtt_port"] = mqttport.value.c_str();
+        
+        serializeJson(json, Serial);
+        serializeJson(json, configFile);
+        configFile.close();
+      }
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }  
+  // Echo back saved parameters to AutoConnectAux page.
+  String echo = "Server: " + mqttserver.value + "<br>";
+  echo += "Port: " + mqttport.value + "<br>";
+  parameters.value = echo;
+  return String("");
+}
+
+// Load parameters from persistent storage
+String loadParams(AutoConnectAux& aux, PageArgument& args) {
+  load_mqtt_config();
+  mqttserver.value = mqttServer;
+  mqttport.value = mqttPort;
+  return String("");
+}
+
+void load_mqtt_config() {
+  if (SPIFFS.begin()) {
+    Serial.println("mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
+
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonDocument json(1024);
+        auto deserializeError = deserializeJson(json, buf.get());
+        serializeJson(json, Serial);
+        if ( ! deserializeError ) {
+          Serial.println("\nparsed json");
+          strcpy(mqttServer, json["mqtt_server"]);
+          strcpy(mqttPort, json["mqtt_port"]);
+        } else {
+          Serial.println("failed to load json config");
+        }
+        configFile.close();
+      }
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }  
+}
+
 
 void update_current_local_time(){
     time(&now);
@@ -96,10 +177,9 @@ void loop() {
   // Check to make sure the MQTT connection is live
   check_mqtt_connection();
 
+
   // Check if we received a complete string through Serial2
   if (byte_array_complete) {
-    // Publish the string to MQTT
-//    publish_arduino_data(input_byte_array);
     parse_input_string(input_byte_array);
 
     // Clear the byte array: reset the index pointer
@@ -111,8 +191,7 @@ void loop() {
   while (Serial2.available()) {
     // Get the new byte:
     byte inByte = (byte)Serial2.read();
-    //Serial.print("RECV: 0x");
-    //Serial.println(inByte, HEX);
+
     // Add it to the inputString:
     input_byte_array[input_byte_array_index] = inByte;
     input_byte_array_index += 1;
@@ -123,4 +202,8 @@ void loop() {
       byte_array_complete = true;
     }
   }
+  captivePortal.handleClient();
+  mqttClient.loop();
+  
 }
+
