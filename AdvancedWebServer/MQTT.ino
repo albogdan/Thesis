@@ -1,38 +1,62 @@
+///#include <ESP32Ping.h>
 
-void setupMqtt(const char *mqttServer, const int mqttPort)
-{
-    mqttClient.setServer(mqttServer, mqttPort);
-    mqttClient.setCallback(callbackMqtt);
-    mqttClient.setBufferSize(1024);   // MAKE SURE TO CHECK THAT THIS IS BIG ENOUGH
+
+long lastReconnectAttempt = 0;
+
+
+bool setupAndConnectToMqtt() {
+  Serial.println("[INFO] Getting MQTT server credentials");
+  MQTTCredentials credentials;
+  if (getMQTTCredentials(&credentials)) {
+    Serial.println("[SETUP] Checking if MQTT server exists");
+    bool ping_success = true;//WiFi.ping(credentials.server_ip); //Ping 3 times
+    if (ping_success) {
+      Serial.println("[SETUP] Setting up MQTT server...");
+      setupMqtt(credentials.server_ip, credentials.port);
+    
+      Serial.println("[SETUP] Connecting to MQTT server...");
+      return connectToMqtt(credentials.username, credentials.password);
+    } else {
+      Serial.println("[ERROR] MQTT Server Ping Failed");
+      return false;
+    }
+  }
+  return false;
 }
 
-boolean connectToMqtt()
+
+void setupMqtt(char *mqttServer, char *mqttPort)
+{
+    mqttClient.setServer(mqttServer, atoi(mqttPort));
+    mqttClient.setCallback(callbackMqtt);
+    mqttClient.setBufferSize(1024);   // MAKE SURE TO CHECK THAT THIS IS BIG ENOUGH
+    mqttClient.setSocketTimeout(5);
+}
+
+boolean connectToMqtt(char *username, char *password)
 {
     char hostname_char[HOSTNAME.length() + 1];
     HOSTNAME.toCharArray(hostname_char, HOSTNAME.length() + 1);
-    while (!mqttClient.connected())
-    {
-        Serial.println("[SETUP] Connecting to MQTT...");
-        if (mqttClient.connect(hostname_char, "roger", "password"))
 
-        { //, mqttUser, mqttPassword )) {
-            Serial.print("[INFO] MAC: ");
-            Serial.println(WiFi.macAddress());
-            Serial.println("[SETUP] Connected to MQTT!\n");
-            mqttSubscribeToTopics(&mqttClient);
-            return true;
-        }
-        else
-        {
-            Serial.print("[SETUP] Connection failed with state ");
-            Serial.print(mqttClient.state());
-            delay(200);
-            return false;
-        }
+    Serial.println("[SETUP] Connecting to MQTT...");
+    if (mqttClient.connect(hostname_char, username, password))
+    { //, mqttUser, mqttPassword )) {
+        Serial.print("[INFO] MAC: ");
+        Serial.println(WiFi.macAddress());
+        Serial.println("[SETUP] Connected to MQTT!\n");
+        mqttSubscribeToTopics(&mqttClient);
+        return true;
+    }
+    else
+    {
+        Serial.print("[SETUP] Connection failed with state ");
+        Serial.println(mqttClient.state());
+        delay(200);
+        return false;
     }
 }
 
-
+/*
 void check_mqtt_connection()
 {
     if (!mqttClient.connected())
@@ -53,6 +77,7 @@ void check_mqtt_connection()
         mqttClient.loop();
     }
 }
+*/
 
 void mqttSubscribeToTopics(PubSubClient *mqttClient)
 {

@@ -124,6 +124,7 @@ void publish_packet_to_mqtt(Packet payload) {
 //        node_fields.add(payload.node_data_fields[i]);
 //        node_data.add(payload.node_data[i]);
 //    }
+
     serializeJson(doc, message);
     String topic = "data/" + HOSTNAME;
     char topic_char_array[topic.length() + 1];
