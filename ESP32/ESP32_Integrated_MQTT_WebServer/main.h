@@ -39,7 +39,7 @@ typedef struct mqtt_credentials{
 typedef struct packet {
   byte src[2];
   unsigned int message_length;
-  long data_value;
+  float data_value;
 } Packet;
 
 /* Questions:
