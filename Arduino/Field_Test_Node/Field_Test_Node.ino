@@ -56,7 +56,11 @@
 
 #include <AdafruitDeviceDriver.h>
 
-bool DEBUG_ENABLE = false;
+// Include the temperature libraries
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+bool DEBUG_ENABLE = true;
 
 #define CS_PIN 10
 #define RST_PIN 9
@@ -64,6 +68,17 @@ bool DEBUG_ENABLE = false;
 
 #define RTC_VCC 4
 #define RTC_INT 2
+
+// Data wire is plugged into port A0 on the Arduino
+#define ONE_WIRE_BUS A0
+#define TEMPERATURE_SENSOR_POWER_PIN A1
+
+// Setup a oneWire instance to communicate with the Dallas Temperature Sensor
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors(&oneWire);
+
 
 LoRaMesh *manager;
 
@@ -79,6 +94,7 @@ static void longToBytes(byte* const buff, unsigned long l)
         shifter -= 8;
     }
 }
+
 /**
  * Callback function that is called when the node receives the request from the gateway
  * and needs to reply back. Users can read sensor value, do some processing and send data back
@@ -97,19 +113,38 @@ void onReceiveRequest(byte **data, byte *len)
   // Generate a random value from 0 to 1000
   // In practice, this should be a sensor reading
   long sensorValue = random(0,1000);
+  digitalWrite(TEMPERATURE_SENSOR_POWER_PIN, HIGH); // Turn ON the temperature sensor
+  // Start up the library
+  sensors.begin();
+  Serial.print("Requesting temperatures...");
+  sensors.requestTemperatures(); // Send the command to get temperatures
+  Serial.println("DONE");
+  // After we got the temperatures, we can print them here.
+  // We use the function ByIndex, and as an example get the temperature from the first sensor only.
+  float tempC = sensors.getTempCByIndex(0);
+  // Check if reading was successful
+  if(tempC != DEVICE_DISCONNECTED_C) 
+  {
+    Serial.print("Temperature for the device 1 (index 0) is: ");
+    Serial.println(tempC);
+  } 
+  else
+  {
+    Serial.println("Error: Could not read temperature data");
+  }
 
-  Serial.print(F("Sending number = "));
-  Serial.print(sensorValue);
-  Serial.println(F(" to the gateway"));
 
   // Specify the length of the payload
-  *len = sizeof(long);
+  *len = sizeof(float);
 
   byte buf[*len];
-  longToBytes(buf, sensorValue);
+  *((float *)buf) = tempC;
+
 
   // Copy the encoded 4-byte array into the data (aka payload)
   memcpy(*data, buf, *len);
+
+  digitalWrite(TEMPERATURE_SENSOR_POWER_PIN, LOW); // Turn OFF the temperature sensor
 }
 
 void setup()
@@ -164,6 +199,10 @@ void setup()
 
   // Set the sleep mode
   manager->setSleepMode(SleepMode::SLEEP_RTC_INTERRUPT, RTC_INT, RTC_VCC);
+
+  pinMode(TEMPERATURE_SENSOR_POWER_PIN, OUTPUT);
+  digitalWrite(TEMPERATURE_SENSOR_POWER_PIN, LOW); // Start the temperature sensor OFF
+  
 }
 
 void loop()

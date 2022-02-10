@@ -5,7 +5,7 @@ import json
 # Make sure you use Python 3.8, Python 3.9 doesn't seem to work
 import paho.mqtt.client as mqtt
 
-MQTT_BROKER_ADDRESS = "1.1.1.1"
+MQTT_BROKER_ADDRESS = "192.168.1.3"
 MQTT_BROKER_PORT = 1883
 CLIENT_NAME = "client_test_name-firebase"
 
@@ -47,7 +47,7 @@ def on_message(client, userdata, message):
 # Connect to firebase
 cred = credentials.Certificate("serviceAccount.json")
 firebase_admin.initialize_app(
-    cred, {"databaseURL": "INSERT_DB_URL_HERE"}
+    cred, {"databaseURL": "https://thesis-42c95-default-rtdb.firebaseio.com/"}
 )
 
 ref = db.reference("/")
