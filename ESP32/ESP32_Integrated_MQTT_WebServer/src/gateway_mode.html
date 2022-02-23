@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3 id="wifi_header">Configure Connection Mode</h3><hr>
+			<div class="" id="encryption_select">
+                <form method='get' action='gatewayModeSave'>
+                    <div>
+                    <select class="form-group" id="selectGatewayMode">
+                        <option value="null">Select Connection Mode</option>
+                        <option value="personal">WiFi Connection</option>
+                        <option value="enterprise">Cellular Connection</option>
+                    </select>
+                    </div>
+                    <br>
+                    <div><button type='submit'>Save</button></div>
+                </form>
+			</div>
+			<br><hr>
+			<div>
+				<a href='/'><button>Back</button></a><br/>
+			</div>
+    </div>
+	<script src="jquery-3.6.0.min.js"></script>
+	<script src="gateway_mode.js"></script>
+	</body>
+</html>
