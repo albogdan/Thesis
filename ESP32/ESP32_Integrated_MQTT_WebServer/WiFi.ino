@@ -1,5 +1,5 @@
 #include "esp_wpa2.h" // For WPA2 Enterprise
-
+#include "esp_wifi.h"
 #define WIFI_CONNECT_TIMEOUT_SECONDS 8
 
 
@@ -27,7 +27,9 @@ bool connectToSTAWiFi(){
   WiFiCredentials credentials;
   if (getSTAWiFiCredentials(&credentials)) {
     Serial.println("[INFO] Got WiFi credentials. Starting AP_STA mode");
-
+    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B)); //802.11B
+    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B|WIFI_ PROTOCOL_11G)); //802.11BG
+    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B| WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N)); //802.11BGN
     
     if (strlen(credentials.identity) == 0) { // Connect to WPA2 Personal WiFi network
       Serial.println("[INFO] Connecting to WPA2 Personal");
