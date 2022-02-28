@@ -60,10 +60,12 @@ void publish_packet_to_mqtt(Packet payload) {
     // Need 4 space for the time field
     const int capacity = JSON_OBJECT_SIZE(6) + 2*JSON_ARRAY_SIZE(payload.message_length/2);
     DynamicJsonDocument doc(capacity);
-        
+
     update_current_local_time();
     String src = "0x" + String(0 | (payload.src[0] << 8) | payload.src[1], HEX);
     doc["src"] = src;
+
+    update_current_local_time();
     doc["time"] = now;
     doc["data"] = payload.data_value;
     
