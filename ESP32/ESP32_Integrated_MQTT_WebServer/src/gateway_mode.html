@@ -18,10 +18,12 @@
 			<div class="" id="encryption_select">
                 <form method='get' action='gatewayModeSave'>
                     <div>
-                    <select class="form-group" id="selectGatewayMode">
+					<label for="gateway_mode">Gateway connection mode</label>
+					<br>
+                    <select id="gateway_mode" name="gateway_mode">
                         <option value="null">Select Connection Mode</option>
-                        <option value="personal">WiFi Connection</option>
-                        <option value="enterprise">Cellular Connection</option>
+                        <option value="wifi">WiFi Connection</option>
+                        <option value="cellular">Cellular Connection</option>
                     </select>
                     </div>
                     <br>
@@ -34,6 +36,6 @@
 			</div>
     </div>
 	<script src="jquery-3.6.0.min.js"></script>
-	<script src="gateway_mode.js"></script>
+	<!-- <script src="gateway_mode.js"></script> -->
 	</body>
 </html>

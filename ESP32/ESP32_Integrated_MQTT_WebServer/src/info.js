@@ -1,7 +1,7 @@
 function setText(text) {
     console.log("Calling settext");
     var jsonObject = JSON.parse(text);
-    document.getElementById("gateway_connection_mode").textContent = jsonObject.gateway_connection_mode;
+    document.getElementById("gateway_mode").textContent = jsonObject.gateway_mode;
 
     document.getElementById("sta_status").textContent = jsonObject.sta_status;
     document.getElementById("sta_encrypt_mode").textContent = jsonObject.sta_encrypt_mode;
