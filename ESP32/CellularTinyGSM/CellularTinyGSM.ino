@@ -4,6 +4,9 @@
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial;
 
 #define TINY_GSM_DEBUG Serial
 #define SerialAT Serial2
@@ -31,6 +34,9 @@ char *mqttPassword = "";
 char *mqttPort = "1883";
 String HOSTNAME = "GSM_TEST_LORA";
 
+// Define the pins for the Arduino serial port
+#define RXD2 18
+#define TXD2 19
 
 void setup() {
 
@@ -38,7 +44,8 @@ void setup() {
   delay(10);
   Serial.println("[SETUP] Serial0 setup complete");
 
-//  SerialAT.begin(115200,SERIAL_8N1,16,17,false);
+  //SerialAT.begin(57600,SERIAL_8N1,RXD2,TXD2); // Hardware Serial
+  //SerialAT.begin(57600,SWSERIAL_8N1,RXD2,TXD2); // Software Serial
   TinyGsmAutoBaud(SerialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
   delay(3000);
   Serial.println("[SETUP] Serial1 Setup Complete");
@@ -72,7 +79,7 @@ void setup() {
   Serial.println(" success");
 
   if (modem.isGprsConnected()) { Serial.println("GPRS connected"); }
-
+  modem.setBaud(57600);
   setupMqtt(mqttServer, mqttPort);
   
 }
