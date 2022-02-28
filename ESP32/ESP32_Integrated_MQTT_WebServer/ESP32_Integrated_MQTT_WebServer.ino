@@ -1,6 +1,13 @@
 #include "main.h"
 
 bool mqtt_connection_made = false;
+unsigned int wifi_connection_status = false;
+unsigned int cellular_connection_status = false;
+
+unsigned int gateway_connection_mode;
+
+PubSubClient mqttClient;
+
 void setup(void)
 {
   // Start the USB serial port
@@ -9,55 +16,71 @@ void setup(void)
   Serial.println("[SETUP] Serial0 setup complete");
 
   // Define the Arduino serial port and start it
-  Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
+  SerialArduino.begin(115200, SWSERIAL_8N1, RXD2, TXD2); // Hardware Serial
   delay(10);
-  Serial.println("[SETUP] Serial2 setup complete");
+  Serial.println("[SETUP] SerialArduino setup complete");
 
   // Start the SPI Flash Files System
   Serial.println("[INFO] Starting SPI Flash File System");
   SPIFFS.begin();
 
-  // Connect to the WiFi network
-  Serial.println("[INFO] Connecting to WiFi");
-  connectToWiFi();
+  // If there is no default gateway_mode.json, create it and
+  // set default mode as WiFi
+  if (!SPIFFS.exists("/gateway_mode.json")) {
+    gateway_connection_mode = GATEWAY_MODE_WIFI;
+    saveGatewayMode(GATEWAY_MODE_WIFI);
+  } else {
+    getGatewayMode(&gateway_connection_mode);
+  }
+
+  if (gateway_connection_mode == GATEWAY_MODE_WIFI) {
+    // Connect to the WiFi network
+    Serial.println("[INFO] Connecting to WiFi");
+    wifi_connection_status = connectToWiFi();
+
+    // Define the MQTT client
+    mqttClient = mqttClientWiFi;
+
+  } else if (gateway_connection_mode == GATEWAY_MODE_CELLULAR) {
+    // Start the WiFi AP
+    WiFi.hostname(HOSTNAME);
+    WiFi.mode(WIFI_MODE_AP);
+    connectToAPWiFi();
+    wifi_connection_status = WIFI_AP_CONNECTED;
+
+    // Define the MQTT client
+    mqttClient = mqttClientCellular;
+
+    // Connect to Cellular
+    //SerialCellular.begin(GSM_BAUD_RATE, SWSERIAL_8N1, RXCellular, TXCellular); // Software Serial, known baud rate
+    TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
+
+    delay(3000);
+    Serial.println("[SETUP] Cellular Serial Setup Complete");
+    cellular_connection_status = connectToCellular();
+  }
 
   // Set up and start the HTTP server for configurations
   Serial.println("[INFO] Starting WebServer");
   httpServerSetupAndStart();
 
-  mqtt_connection_made = setupAndConnectToMqtt();
-  if (!mqtt_connection_made)
-    Serial.println("[ERROR] MQTT connection unsuccessful");
-
   // Set timezone to Eastern Standard Time
   setenv("TZ", "EST5EDT4,M3.2.0/02:00:00,M11.1.0/02:00:00", 1);
   tzset();
 
-  // Setup periodic synch with the NTP server
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, "pool.ntp.org");
-  sntp_init();
+  if(wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS) {
+    mqtt_connection_made = setupAndConnectToMqtt();
+    if (!mqtt_connection_made)
+      Serial.println("[ERROR] MQTT connection unsuccessful");
 
-  // If the year is not correct, sync it up
-  if (timeinfo.tm_year < (2019 - 1900)) {
-      int retry = 0;
-      const int retry_count = 10;
-      while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
-          Serial.print("[SETUP] Waiting for system time to be set...(");
-          Serial.print(retry);
-          Serial.print("/");
-          Serial.print(retry_count);
-          Serial.println(")");
-          vTaskDelay(2000 / portTICK_PERIOD_MS);
-      }
+    configure_time();
   }
-  Serial.print("[INFO] The current time is: ");
-  update_current_local_time();
-  Serial.println(strftime_buf);
 
-  // Initialize the sleep timer
-  Serial.println("[INFO] Initializing sleep timer");
-  initialize_sleep_timer(SLEEP_TIMER_SECONDS);
+  if (SLEEP_ENABLED) {
+    // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
+    Serial.println("[INFO] Initializing sleep timer");
+    initialize_sleep_timer(SLEEP_TIMER_SECONDS);
+  }
 
   // Signal to the Arduino that the device has booted
   Serial.println("[SETUP] Boot sequence complete.");
@@ -73,7 +96,7 @@ void loop(void)
 //    loop_and_check_mqtt_connection();
   }
   
-  // Check if we received a complete string through Serial2
+  // Check if we received a complete string through SerialArduino
   if (byte_array_complete)
   {
     // Publish the string to MQTT
@@ -84,11 +107,11 @@ void loop(void)
     byte_array_complete = false;
   }
 
-  // Check if there's anything in the Serial2 buffer
-  while (Serial2.available())
+  // Check if there's anything in the SerialArduino buffer
+  while (SerialArduino.available())
   {
     // Get the new byte
-    byte inByte = (byte)Serial2.read();
+    byte inByte = (byte)SerialArduino.read();
 
     // Add it to the inputString:
     input_byte_array[input_byte_array_index] = inByte;
@@ -105,11 +128,66 @@ void loop(void)
   // Allow the CPU to handle HTTP requests
   server.handleClient();
   delay(2); //allow the cpu to switch to other tasks
+//  update_current_local_time();
+//  Serial.println(strftime_buf);
 }
+
+void configure_time() {
+  if (cellular_connection_status == CELLULAR_CONNECTION_SUCCESS) {
+    Serial.println("[SETUP] Waiting for system time to be set from cellular...");
+    cellular_modem.NTPServerSync();
+    int   year3    = 0;
+    int   month3   = 0;
+    int   day3     = 0;
+    int   hour3    = 0;
+    int   min3     = 0;
+    int   sec3     = 0;
+    float timezone = 0;
+    cellular_modem.getNetworkTime(&year3, &month3, &day3, &hour3, &min3, &sec3,
+                             &timezone);
+    timeinfo.tm_sec = sec3;
+    timeinfo.tm_min = min3;
+    timeinfo.tm_hour = hour3;
+    timeinfo.tm_mday = day3;
+    timeinfo.tm_mon = month3 - 1;
+    timeinfo.tm_year = year3 - 1900;
+
+    now = mktime(&timeinfo);
+    timeval time_now;
+    time_now.tv_sec = now; //Assign time_here to this object.
+    time_now.tv_usec = 0; //As time_t can hold only seconds.
+
+    settimeofday(&time_now, NULL);
+
+  } else if(wifi_connection_status == WIFI_APSTA_CONNECTED) {
+    // Setup periodic synch with the NTP server
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+
+    // If the year is not correct, sync it up
+    if (timeinfo.tm_year < (2019 - 1900)) {
+        int retry = 0;
+        const int retry_count = 10;
+        while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
+            Serial.print("[SETUP] Waiting for system time to be set through NTP...(");
+            Serial.print(retry);
+            Serial.print("/");
+            Serial.print(retry_count);
+            Serial.println(")");
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+        }
+    }
+  }
+  Serial.print("[INFO] The current time is: ");
+  update_current_local_time();
+  Serial.println(strftime_buf);
+}
+
 
 void update_current_local_time()
 {
-  time(&now);
-  localtime_r(&now, &timeinfo);
-  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  time(&now); // Update the time
+  localtime_r(&now, &timeinfo); // Convert to the timeinfo variable
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo); // Print the timeinfo variable
 }

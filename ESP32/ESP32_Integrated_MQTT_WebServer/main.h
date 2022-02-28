@@ -13,7 +13,17 @@
 #include "driver/timer.h"
 #include "driver/rtc_io.h"
 
+#define WIFI_AP_CONNECTED 1
+#define WIFI_APSTA_CONNECTED 2
+
+#define CELLULAR_CONNECTION_SUCCESS 1
+#define CELLULAR_CONNECTION_FAILURE 2
+
+#define GATEWAY_MODE_WIFI 1
+#define GATEWAY_MODE_CELLULAR 2
+
 String HOSTNAME = "ESP32_LORA";
+bool SLEEP_ENABLED = false;
 
 /* The default SSID and password for the access point */
 const char *ap_ssid = "ESP32AP";
@@ -56,10 +66,6 @@ byte input_byte_array[3*MAX_PAYLOAD_SIZE]; // Extra large just in case
 unsigned int input_byte_array_index = 0;
 bool byte_array_complete = false;
 
-// Define the pins for the Arduino serial port
-#define RXD2 16
-#define TXD2 17
-
 /* ----- END SERIAL SETTINGS ----- */
 
 /* ----- BEGIN TIME VARIABLES ----- */
@@ -75,10 +81,44 @@ bool byte_array_complete = false;
 time_t now;
 char strftime_buf[64];
 struct tm timeinfo;
+
 /* ----- END TIME VARIABLES ----- */
 
 
+/* ----- BEGIN CELLULAR CONNECTION VARIABLES ----- */
+#define TINY_GSM_MODEM_SIM7600
+#include <TinyGsmClient.h>
+#include <SoftwareSerial.h>
+
+// Define the pins for the Arduino serial port
+#define RXD2 18
+#define TXD2 19
+
+// Define the pins for the Cellular serial port
+#define RXCellular 16
+#define TXCellular 17
+
+SoftwareSerial ss;
+#define SerialCellular Serial2
+#define SerialArduino ss
+
+TinyGsm cellular_modem(SerialCellular);
+TinyGsmClient cellular_client(cellular_modem);
+PubSubClient mqttClientCellular(cellular_client);
+
+#define TINY_GSM_USE_GPRS true
+#define GSM_AUTOBAUD_MIN 9600
+#define GSM_AUTOBAUD_MAX 115200
+#define GSM_BAUD_RATE 57600
+
+const char apn[]      = "iot.truphone.com";
+const char gprsUser[] = "";
+const char gprsPass[] = "";
+
+/* ----- END CELLULAR CONNECTION VARIABLES ----- */
+
+
 WiFiClient espClient;
-PubSubClient mqttClient(espClient);
+PubSubClient mqttClientWiFi(espClient);
 
 WebServer server(80);
