@@ -4,8 +4,7 @@
 
 
 // ---------------------------------- BEGIN WIFI CONNECTION FUNCTIONS ----------------------------------
-void connectToWiFi()
-{
+int connectToWiFi() {
   WiFi.hostname(HOSTNAME);
   WiFi.mode(WIFI_MODE_APSTA);
 //  connectToSTAWiFi();
@@ -14,11 +13,13 @@ void connectToWiFi()
   if (connectToSTAWiFi()) {
     Serial.println("[INFO] STA connected successfully, starting AP");
     connectToAPWiFi();
+    return WIFI_APSTA_CONNECTED;
   } else {
     Serial.println("[INFO] Failed to connect to STA, starting AP");
     WiFi.disconnect();
     WiFi.mode(WIFI_MODE_AP);
     connectToAPWiFi();
+    return WIFI_AP_CONNECTED;
   }
 }
 
@@ -27,10 +28,7 @@ bool connectToSTAWiFi(){
   WiFiCredentials credentials;
   if (getSTAWiFiCredentials(&credentials)) {
     Serial.println("[INFO] Got WiFi credentials. Starting AP_STA mode");
-    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B)); //802.11B
-    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B|WIFI_ PROTOCOL_11G)); //802.11BG
-    // esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B| WIFI_PROTOCOL_11G|WIFI_PROTOCOL_11N)); //802.11BGN
-    
+
     if (strlen(credentials.identity) == 0) { // Connect to WPA2 Personal WiFi network
       Serial.println("[INFO] Connecting to WPA2 Personal");
       WiFi.begin(credentials.ssid, credentials.password);
