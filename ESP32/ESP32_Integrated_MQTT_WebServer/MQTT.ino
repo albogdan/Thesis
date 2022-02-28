@@ -1,8 +1,4 @@
-///#include <ESP32Ping.h>
-
-
 long lastReconnectAttempt = 0;
-
 
 bool setupAndConnectToMqtt() {
   Serial.println("[INFO] Getting MQTT server credentials");
@@ -61,10 +57,10 @@ void loop_and_check_mqtt_connection()
 {
     if (!mqttClient.connected())
     {
-        long now = millis();
-        if (now - lastReconnectAttempt > 10000)
+        long now_mqtt = millis();
+        if (now_mqtt - lastReconnectAttempt > 10000)
         {
-            lastReconnectAttempt = now;
+            lastReconnectAttempt = now_mqtt;
             // Attempt to reconnect
             mqtt_connection_made = setupAndConnectToMqtt();
             if (mqtt_connection_made)
