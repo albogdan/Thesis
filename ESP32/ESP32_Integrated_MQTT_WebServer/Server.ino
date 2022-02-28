@@ -8,6 +8,7 @@ void httpServerSetupAndStart()
     server.on("/wifiSaveSTA", HTTP_GET, handleSetSTAWiFiCredentials);
     server.on("/wifiSaveAP", HTTP_GET, handleSetAPWiFiCredentials);
     server.on("/mqttSave", HTTP_GET, handleSetMQTTCredentials);
+    server.on("/gatewayModeSave", HTTP_GET, handleSetGatewayMode);
     server.on("/restart", HTTP_POST, handleESPRestart);
     server.on("/factoryreset", HTTP_POST, handleFactoryReset);
 
@@ -88,11 +89,88 @@ void handleSetMQTTCredentials() {
   server.send(303);
 }
 
+void handleSetGatewayMode() {
+  Serial.print("Gateway mode:");
+  Serial.println(server.arg("gateway_mode"));
+  if(server.arg("gateway_mode") == "wifi") {
+    Serial.println("WiFi Gateway Mode");
+    saveGatewayMode(GATEWAY_MODE_WIFI);
+  } else if(server.arg("gateway_mode") == "cellular") {
+    Serial.println("Cellular Gateway Mode");
+    saveGatewayMode(GATEWAY_MODE_CELLULAR);
+  }
+  server.sendHeader("Location","/");
+  server.send(303);
+}
+
+bool saveGatewayMode(unsigned int gateway_mode) {
+    // Creating new file
+    File configFile = SPIFFS.open("/gateway_mode.json", "w");
+
+    if (configFile) {
+      Serial.println("[INFO] Opened Gateway Mode config file");
+      DynamicJsonDocument json(1024);
+      json["gateway_mode"] = gateway_mode;
+
+      //serializeJson(json, Serial);
+      serializeJson(json, configFile);
+      configFile.close();
+      return true;
+    }
+  Serial.println("Returning false");
+  return false;
+}
+
+bool getGatewayMode(unsigned int* gateway_mode) {
+  if (SPIFFS.exists("/gateway_mode.json")) {
+    //File exists, reading and loading
+    File configFile = SPIFFS.open("/gateway_mode.json", "r");
+
+    if (configFile) {
+      Serial.println("[INFO] Opened Gateway Mode config file");
+      size_t size = configFile.size();
+      // Allocate a buffer to store contents of the file.
+      std::unique_ptr<char[]> buf(new char[size]);
+
+      Serial.println("[INFO] Reading config file bytes");
+      configFile.readBytes(buf.get(), size);
+      Serial.println("[INFO] Creating dynamic JSON document");
+      DynamicJsonDocument json(1024);
+      Serial.println("[INFO] Deserializing gateway mode config JSON");
+      auto deserializeError = deserializeJson(json, buf.get());
+      //serializeJson(json, Serial);
+      if ( ! deserializeError ) {
+        *gateway_mode = json["gateway_mode"];
+        configFile.close();
+
+        Serial.print("[INFO] Gateway Mode: ");
+        Serial.println(*gateway_mode);
+        return true;
+      } else {
+        Serial.println("[INFO] Failed to load JSON config");
+        configFile.close();
+        return false;
+      }
+    }
+    Serial.println("[INFO] No config file found");
+  }
+  return false;
+}
+
 void handleInfoPageLoad() {
   Serial.println("[INFO] Handling Info Page Load");
   String jsonMap;
-  const size_t capacity = JSON_OBJECT_SIZE(20);
+  const size_t capacity = JSON_OBJECT_SIZE(22);
   DynamicJsonDocument doc(capacity);
+
+  // Gateway Mode Information
+  unsigned int gateway_mode;
+  getGatewayMode(&gateway_mode);
+  if (gateway_mode == GATEWAY_MODE_WIFI) {
+    doc["gateway_mode"] = "WiFi";
+  } else if (gateway_mode == GATEWAY_MODE_CELLULAR) {
+    doc["gateway_mode"] = "Cellular";
+  }
 
   // STA Information
   if (WiFi.status() == WL_CONNECTED)
@@ -162,6 +240,9 @@ void handleFactoryReset(){
   if (SPIFFS.exists("/mqtt_config.json")) {
     SPIFFS.remove("/mqtt_config.json");
   }
+  if (SPIFFS.exists("/gateway_mode.json")) {
+    SPIFFS.remove("/gateway_mode.json");
+  }
   
   server.sendHeader("Location","/");
   server.send(303);
@@ -174,18 +255,6 @@ void handleFactoryReset(){
 // ---------------------------------- BEGIN SERVER HELPERS ----------------------------------
 
 // https://arduinojson.org/v6/assistant/
-/*void getSerializedJson(String *map)
-{
-    const size_t capacity = JSON_OBJECT_SIZE(5);
-    DynamicJsonDocument doc(capacity);
-    doc["onSpeed"] = SPEED_ON;
-    doc["offSpeed"] = SPEED_OFF;
-    doc["light"] = photoresistorValue;
-    doc["onThres"] = PHOTORESISTOR_THRESHOLD_ON;
-    doc["offThres"] = PHOTORESISTOR_THRESHOLD_OFF;
-
-    serializeJson(doc, *map);
-}*/
 
 String getContentType(String filename)
 {
