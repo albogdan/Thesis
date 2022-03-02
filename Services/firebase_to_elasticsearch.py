@@ -114,10 +114,6 @@ if __name__ == "__main__":
 
     # Connect to Firebase, use a service account
     cred = credentials.Certificate("serviceAccount.json")
-    obj = firebase_admin.initialize_app(
-        cred, {"databaseURL": "INSERT_DB_URL_HERE"}
-    )
+    obj = firebase_admin.initialize_app(cred, {"databaseURL": "INSERT_DB_URL_HERE"})
 
     db.reference("", app=obj).listen(firebase_realtime_database_listener_callback)
-    
-    
