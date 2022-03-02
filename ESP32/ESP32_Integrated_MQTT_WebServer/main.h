@@ -93,6 +93,7 @@ struct tm timeinfo;
 // Define the pins for the Arduino serial port
 #define RXD2 18
 #define TXD2 19
+#define ARDUINO_BAUD_RATE 57600
 
 // Define the pins for the Cellular serial port
 #define RXCellular 16

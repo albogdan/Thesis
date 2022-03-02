@@ -16,7 +16,7 @@ void setup(void)
   Serial.println("[SETUP] Serial0 setup complete");
 
   // Define the Arduino serial port and start it
-  SerialArduino.begin(115200, SWSERIAL_8N1, RXD2, TXD2); // Hardware Serial
+  SerialArduino.begin(ARDUINO_BAUD_RATE, SWSERIAL_8N1, RXD2, TXD2); // Hardware Serial
   delay(10);
   Serial.println("[SETUP] SerialArduino setup complete");
 

@@ -60,7 +60,7 @@ void onReciveResponse(byte *data, byte len, byte *srcAddr)
   // Here we output the data to the ESP using digital pin 5,6
   // Initialize connection
   PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
-  ss.begin(115200);   // Begin serial channel
+  ss.begin(57600);   // Begin serial channel
 
   // Wait for the ESP32 to initialize
   while (!(PINB & (1<<PORTB7))) { // ESP_32_READY_PIN

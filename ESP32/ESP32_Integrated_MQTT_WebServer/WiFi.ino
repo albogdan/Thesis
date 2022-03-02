@@ -28,7 +28,6 @@ bool connectToSTAWiFi(){
   WiFiCredentials credentials;
   if (getSTAWiFiCredentials(&credentials)) {
     Serial.println("[INFO] Got WiFi credentials. Starting AP_STA mode");
-ToW
     if (strlen(credentials.identity) == 0) { // Connect to WPA2 Personal WiFi network
       Serial.println("[INFO] Connecting to WPA2 Personal");
       WiFi.begin(credentials.ssid, credentials.password);
