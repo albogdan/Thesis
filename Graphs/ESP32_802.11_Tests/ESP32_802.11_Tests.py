@@ -54,12 +54,9 @@ data = {
     },
 }
 
-# Plot
-fig, axs = plt.subplots(6, 1, figsize=(12, 30))
-
-
 # Read the dataframe from the CSV
 for i in range(len(FILE_NAMES)):
+    fig, ax = plt.subplots(figsize=(12, 4))
     df = pd.read_csv(FILE_NAMES[i], sep=",", header=0)
 
     # Divide the uA by 1000 to get mA
@@ -81,32 +78,32 @@ for i in range(len(FILE_NAMES)):
     sub_df["Timestamp(ms)"] = sub_df["Timestamp(ms)"].sub(START_TIME).div(1000)
 
     sub_df[["Timestamp(ms)", "Current(uA)"]].plot(
-        x="Timestamp(ms)", y="Current(uA)", ax=axs[i]
+        x="Timestamp(ms)", y="Current(uA)", ax=ax, legend=None
     )
 
     # Axis labels
-    axs[i].set_xlabel("Timestamp(s)")
-    axs[i].set_ylabel("Current(mA)")
-    axs[i].set_title(f"{TITLE}")
-    axs[i].annotate(
+    ax.set_xlabel("Timestamp(s)")
+    ax.set_ylabel("Current(mA)")
+    #ax.set_title(f"{TITLE}")
+    ax.annotate(
         f"Charge: {data[TITLE]['charge']}C",
         xy=(2.1, 75),
         xytext=(2.1, 75),
         bbox=dict(boxstyle="round", facecolor="white"),
     )
-    axs[i].annotate(
+    ax.annotate(
         f"Time: {data[TITLE]['time_running']}s",
         xy=(2.1, 25),
         xytext=(2.1, 25),
         bbox=dict(boxstyle="round", facecolor="white"),
     )
-    axs[i].annotate(
+    ax.annotate(
         f"Max Current: {data[TITLE]['max_current']}mA",
         xy=(4.1, 75),
         xytext=(4.1, 75),
         bbox=dict(boxstyle="round", facecolor="white"),
     )
-    axs[i].annotate(
+    ax.annotate(
         f"Avg Current: {data[TITLE]['average_current']}mA",
         xy=(4.1, 25),
         xytext=(4.1, 25),
@@ -114,7 +111,7 @@ for i in range(len(FILE_NAMES)):
     )
 
 
-fig.savefig("802.11BGN.png")
+    fig.savefig(f"{TITLE}.png", bbox_inches='tight')
 
 plt.show()
 plt.clf()
