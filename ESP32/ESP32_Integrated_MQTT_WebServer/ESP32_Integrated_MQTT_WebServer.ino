@@ -4,7 +4,7 @@ bool mqtt_connection_made = false;
 unsigned int wifi_connection_status = false;
 unsigned int cellular_connection_status = false;
 
-unsigned int gateway_connection_mode;
+unsigned int uplink_connection_mode;
 
 PubSubClient mqttClient;
 
@@ -24,16 +24,16 @@ void setup(void)
   Serial.println("[INFO] Starting SPI Flash File System");
   SPIFFS.begin();
 
-  // If there is no default gateway_mode.json, create it and
+  // If there is no default uplink_mode.json, create it and
   // set default mode as WiFi
-  if (!SPIFFS.exists("/gateway_mode.json")) {
-    gateway_connection_mode = GATEWAY_MODE_WIFI;
-    saveGatewayMode(GATEWAY_MODE_WIFI);
+  if (!SPIFFS.exists("/uplink_mode.json")) {
+    uplink_connection_mode = UPLINK_MODE_WIFI;
+    saveUplinkMode(UPLINK_MODE_WIFI);
   } else {
-    getGatewayMode(&gateway_connection_mode);
+    getUplinkMode(&uplink_connection_mode);
   }
 
-  if (gateway_connection_mode == GATEWAY_MODE_WIFI) {
+  if (uplink_connection_mode == UPLINK_MODE_WIFI) {
     // Connect to the WiFi network
     Serial.println("[INFO] Connecting to WiFi");
     wifi_connection_status = connectToWiFi();
@@ -41,7 +41,7 @@ void setup(void)
     // Define the MQTT client
     mqttClient = mqttClientWiFi;
 
-  } else if (gateway_connection_mode == GATEWAY_MODE_CELLULAR) {
+  } else if (uplink_connection_mode == UPLINK_MODE_CELLULAR) {
     // Start the WiFi AP
     WiFi.hostname(HOSTNAME);
     WiFi.mode(WIFI_MODE_AP);

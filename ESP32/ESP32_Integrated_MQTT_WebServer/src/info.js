@@ -1,11 +1,13 @@
 function setText(text) {
     console.log("Calling settext");
     var jsonObject = JSON.parse(text);
-    document.getElementById("gateway_mode").textContent = jsonObject.gateway_mode;
+    document.getElementById("uplink_mode").textContent = jsonObject.uplink_mode;
 
     document.getElementById("sta_status").textContent = jsonObject.sta_status;
     document.getElementById("sta_encrypt_mode").textContent = jsonObject.sta_encrypt_mode;
     document.getElementById("sta_ip_address").textContent = jsonObject.sta_ip_address;
+
+    document.getElementById("cellular_status").textContent = jsonObject.cellular_status;
     
     document.getElementById("ap_ip_address").textContent = jsonObject.ap_ip_address;
     document.getElementById("ap_ssid").textContent = jsonObject.ap_ssid;

@@ -8,7 +8,7 @@ void httpServerSetupAndStart()
     server.on("/wifiSaveSTA", HTTP_GET, handleSetSTAWiFiCredentials);
     server.on("/wifiSaveAP", HTTP_GET, handleSetAPWiFiCredentials);
     server.on("/mqttSave", HTTP_GET, handleSetMQTTCredentials);
-    server.on("/gatewayModeSave", HTTP_GET, handleSetGatewayMode);
+    server.on("/uplinkModeSave", HTTP_GET, handleSetUplinkMode);
     server.on("/restart", HTTP_POST, handleESPRestart);
     server.on("/factoryreset", HTTP_POST, handleFactoryReset);
 
@@ -89,28 +89,28 @@ void handleSetMQTTCredentials() {
   server.send(303);
 }
 
-void handleSetGatewayMode() {
-  Serial.print("Gateway mode:");
-  Serial.println(server.arg("gateway_mode"));
-  if(server.arg("gateway_mode") == "wifi") {
-    Serial.println("WiFi Gateway Mode");
-    saveGatewayMode(GATEWAY_MODE_WIFI);
-  } else if(server.arg("gateway_mode") == "cellular") {
-    Serial.println("Cellular Gateway Mode");
-    saveGatewayMode(GATEWAY_MODE_CELLULAR);
+void handleSetUplinkMode() {
+  Serial.print("Uplink mode:");
+  Serial.println(server.arg("uplink_mode"));
+  if(server.arg("uplink_mode") == "wifi") {
+    Serial.println("WiFi Uplink Mode");
+    saveUplinkMode(UPLINK_MODE_WIFI);
+  } else if(server.arg("uplink_mode") == "cellular") {
+    Serial.println("Cellular Uplink Mode");
+    saveUplinkMode(UPLINK_MODE_CELLULAR);
   }
   server.sendHeader("Location","/");
   server.send(303);
 }
 
-bool saveGatewayMode(unsigned int gateway_mode) {
+bool saveUplinkMode(unsigned int uplink_mode) {
     // Creating new file
-    File configFile = SPIFFS.open("/gateway_mode.json", "w");
+    File configFile = SPIFFS.open("/uplink_mode.json", "w");
 
     if (configFile) {
-      Serial.println("[INFO] Opened Gateway Mode config file");
+      Serial.println("[INFO] Opened Uplink Mode config file");
       DynamicJsonDocument json(1024);
-      json["gateway_mode"] = gateway_mode;
+      json["uplink_mode"] = uplink_mode;
 
       //serializeJson(json, Serial);
       serializeJson(json, configFile);
@@ -121,13 +121,13 @@ bool saveGatewayMode(unsigned int gateway_mode) {
   return false;
 }
 
-bool getGatewayMode(unsigned int* gateway_mode) {
-  if (SPIFFS.exists("/gateway_mode.json")) {
+bool getUplinkMode(unsigned int* uplink_mode) {
+  if (SPIFFS.exists("/uplink_mode.json")) {
     //File exists, reading and loading
-    File configFile = SPIFFS.open("/gateway_mode.json", "r");
+    File configFile = SPIFFS.open("/uplink_mode.json", "r");
 
     if (configFile) {
-      Serial.println("[INFO] Opened Gateway Mode config file");
+      Serial.println("[INFO] Opened Uplink Mode config file");
       size_t size = configFile.size();
       // Allocate a buffer to store contents of the file.
       std::unique_ptr<char[]> buf(new char[size]);
@@ -136,15 +136,15 @@ bool getGatewayMode(unsigned int* gateway_mode) {
       configFile.readBytes(buf.get(), size);
       Serial.println("[INFO] Creating dynamic JSON document");
       DynamicJsonDocument json(1024);
-      Serial.println("[INFO] Deserializing gateway mode config JSON");
+      Serial.println("[INFO] Deserializing uplink mode config JSON");
       auto deserializeError = deserializeJson(json, buf.get());
       //serializeJson(json, Serial);
       if ( ! deserializeError ) {
-        *gateway_mode = json["gateway_mode"];
+        *uplink_mode = json["uplink_mode"];
         configFile.close();
 
-        Serial.print("[INFO] Gateway Mode: ");
-        Serial.println(*gateway_mode);
+        Serial.print("[INFO] Uplink Mode: ");
+        Serial.println(*uplink_mode);
         return true;
       } else {
         Serial.println("[INFO] Failed to load JSON config");
@@ -160,23 +160,31 @@ bool getGatewayMode(unsigned int* gateway_mode) {
 void handleInfoPageLoad() {
   Serial.println("[INFO] Handling Info Page Load");
   String jsonMap;
-  const size_t capacity = JSON_OBJECT_SIZE(22);
+  const size_t capacity = JSON_OBJECT_SIZE(24);
   DynamicJsonDocument doc(capacity);
 
-  // Gateway Mode Information
-  unsigned int gateway_mode;
-  getGatewayMode(&gateway_mode);
-  if (gateway_mode == GATEWAY_MODE_WIFI) {
-    doc["gateway_mode"] = "WiFi";
-  } else if (gateway_mode == GATEWAY_MODE_CELLULAR) {
-    doc["gateway_mode"] = "Cellular";
+  // Uplink Mode Information
+  unsigned int uplink_mode;
+  getUplinkMode(&uplink_mode);
+  if (uplink_mode == UPLINK_MODE_WIFI) {
+    doc["uplink_mode"] = "WiFi";
+  } else if (uplink_mode == UPLINK_MODE_CELLULAR) {
+    doc["uplink_mode"] = "Cellular";
+  }
+  // Cellular Information
+  if (cellular_modem.isNetworkConnected()) {// Might have to change to using the variable
+    doc["cellular_status"] = "Connected";
+  } else {
+    doc["cellular_status"] = "Disconnected";
   }
 
   // STA Information
-  if (WiFi.status() == WL_CONNECTED)
+  if (WiFi.status() == WL_CONNECTED) {
     doc["sta_status"] = "Connected";
-  else
+  } else {
     doc["sta_status"] = "Disconnected";
+  }
+  
   WiFiCredentials sta_credentials;
   if (getSTAWiFiCredentials(&sta_credentials)) {
     if (strlen(sta_credentials.identity) == 0) {
@@ -240,8 +248,8 @@ void handleFactoryReset(){
   if (SPIFFS.exists("/mqtt_config.json")) {
     SPIFFS.remove("/mqtt_config.json");
   }
-  if (SPIFFS.exists("/gateway_mode.json")) {
-    SPIFFS.remove("/gateway_mode.json");
+  if (SPIFFS.exists("/uplink_mode.json")) {
+    SPIFFS.remove("/uplink_mode.json");
   }
   
   server.sendHeader("Location","/");

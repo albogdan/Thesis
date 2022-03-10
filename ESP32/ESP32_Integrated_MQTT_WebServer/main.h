@@ -19,11 +19,11 @@
 #define CELLULAR_CONNECTION_SUCCESS 1
 #define CELLULAR_CONNECTION_FAILURE 2
 
-#define GATEWAY_MODE_WIFI 1
-#define GATEWAY_MODE_CELLULAR 2
+#define UPLINK_MODE_WIFI 1
+#define UPLINK_MODE_CELLULAR 2
 
 String HOSTNAME = "ESP32_LORA";
-bool SLEEP_ENABLED = false;
+bool SLEEP_ENABLED = true;
 
 /* The default SSID and password for the access point */
 const char *ap_ssid = "ESP32AP";
