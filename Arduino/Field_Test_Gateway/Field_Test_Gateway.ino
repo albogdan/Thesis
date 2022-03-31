@@ -40,6 +40,8 @@
 #define ESP_32_WAKEUP_PIN PB6
 #define ESP_32_READY_PIN PB7
 
+#define NUM_TEST_MESSAGES 10
+
 LoRaMesh *manager;
 
 DeviceDriver *myDriver;
@@ -52,32 +54,61 @@ SoftwareSerial ss(5,6); //RX, TX
 // For Gateway only: The first bit of the address has to be 1
 byte myAddr[2] = {0x80, 0xA0};
 
+
+/**
+ * Callback function that will be called when Gateway begins data collection
+ */
+void preDataCollection()
+{
+  //PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
+  PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
+}
+
+/**
+ * Callback function that will be called when Gateway ends data collection
+ */
+void postDataCollection()
+{
+  // Connection complete, let the ESP32 hibernate
+  //PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
+  PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
+}
+
+
 /**
  * Callback function that will be called when Gateway receives the reply from a node
  */
-void onReciveResponse(byte *data, byte len, byte *srcAddr)
+
+ 
+void recieveResponse(byte *data, byte len, byte *srcAddr)
 {
   // Here we output the data to the ESP using digital pin 5,6
   // Initialize connection
-  PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
+  //PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
+  //PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
   ss.begin(57600);   // Begin serial channel
 
   // Wait for the ESP32 to initialize
   while (!(PINB & (1<<PORTB7))) { // ESP_32_READY_PIN
     delay(100);
   }
-  delay(3000);
-  
-  Serial.println("Sending src addr");
-  ss.write(srcAddr,2);
-  Serial.println("Sending len");
-  ss.write(len);
-  Serial.println("Sending data");
-  ss.write(data, len);
-  ss.println();
+  delay(700);
+//  for (int i = 0; i < NUM_TEST_MESSAGES; i++) {
+    //Serial.println("Sending src addr");
+    ss.write(srcAddr,2);
+    //Serial.println("Sending len");
+    ss.write(len);
+    //Serial.println("Sending data");
+    ss.write(data, len);
+    ss.println();
+    delay(5);
+//  }
+  //while (PINB & (1<<PORTB7)) { // ESP_32_READY_PIN
+    delay(100);
+  //}
   // Connection complete, let the ESP32 hibernate
-  PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
-
+  //PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
+  //PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
   ss.end();  
 }
 
@@ -106,16 +137,18 @@ void setup()
   // For Gateway only: Set up the time interval between requests
   manager->setGatewayReqTime(GATEWAY_REQ_TIME);
 
-  // Set up the callback funtion
-  manager->onReceiveResponse(onReciveResponse);
+  // Set up the callback fucntions
+  manager->onReceiveResponse(recieveResponse);
+  manager->preDataCollectionCallback(preDataCollection);
+  manager->postDataCollectionCallback(postDataCollection);
 
   // Set the sleep mode
   manager->setSleepMode(SleepMode::SLEEP_RTC_INTERRUPT, RTC_INT, RTC_VCC);
 
   // Initialize the ESP32 signal pins
   DDRB |= (1 << DDB6); // Set PB6 as output
-  PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
-
+  //PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
+  PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
   delay(1000);
 }
 
