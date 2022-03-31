@@ -33,6 +33,7 @@ void setup(void)
     getUplinkMode(&uplink_connection_mode);
   }
 
+  
   if (uplink_connection_mode == UPLINK_MODE_WIFI) {
     // Connect to the WiFi network
     Serial.println("[INFO] Connecting to WiFi");
@@ -50,12 +51,13 @@ void setup(void)
 
     // Define the MQTT client
     mqttClient = mqttClientCellular;
-
+    delay(6000);
     // Connect to Cellular
     //SerialCellular.begin(GSM_BAUD_RATE, SWSERIAL_8N1, RXCellular, TXCellular); // Software Serial, known baud rate
-    TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
+    SerialCellular.begin(115200);
+    //TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
 
-    delay(3000);
+    delay(500);
     Serial.println("[SETUP] Cellular Serial Setup Complete");
     cellular_connection_status = connectToCellular();
   }
