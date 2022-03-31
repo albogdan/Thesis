@@ -23,7 +23,7 @@
 #define UPLINK_MODE_CELLULAR 2
 
 String HOSTNAME = "ESP32_LORA";
-bool SLEEP_ENABLED = true;
+bool SLEEP_ENABLED = false;
 
 /* The default SSID and password for the access point */
 const char *ap_ssid = "ESP32AP";
@@ -60,7 +60,7 @@ typedef struct packet {
 /* ----- BEGIN SERIAL SETTINGS ----- */
 // The maximum size of a message - this is calculated from the 
 // message metadata plus data max size. See diagram above.
-#define MAX_PAYLOAD_SIZE 5+64 
+#define MAX_PAYLOAD_SIZE 5+512
 byte input_byte_array[3*MAX_PAYLOAD_SIZE]; // Extra large just in case
 
 unsigned int input_byte_array_index = 0;
@@ -101,6 +101,8 @@ struct tm timeinfo;
 
 SoftwareSerial ss;
 #define SerialCellular Serial2
+#define SERIAL_SIZE_RX 1024
+
 #define SerialArduino ss
 
 TinyGsm cellular_modem(SerialCellular);
