@@ -35,7 +35,9 @@ boolean connectToMqtt(char *username, char *password)
     HOSTNAME.toCharArray(hostname_char, HOSTNAME.length() + 1);
 
     Serial.println("[SETUP] Connecting to MQTT...");
-    if (mqttClient.connect(hostname_char, username, password))
+    if (mqttClient.connected()) {
+      Serial.println("[INFO] MQTT Client is already connected!");
+    }else if (mqttClient.connect(hostname_char, username, password))
     { //, mqttUser, mqttPassword )) {
         Serial.print("[INFO] MAC: ");
         Serial.println(WiFi.macAddress());
@@ -58,7 +60,7 @@ void loop_and_check_mqtt_connection()
     if (!mqttClient.connected())
     {
         long now_mqtt = millis();
-        if (now_mqtt - lastReconnectAttempt > 10000)
+        if (now_mqtt - lastReconnectAttempt > 10000L)
         {
             lastReconnectAttempt = now_mqtt;
             // Attempt to reconnect
@@ -228,5 +230,38 @@ void publish_arduino_data(String arduino_data) {
     Serial.println(message);
     mqttClient.publish(topic_char_array, message_char_array);
 
+    yield();
+}
+
+void publish_test_data() {
+    String payload = "Test message";
+    String message;
+    // 2 static fields + two arrays of size message_length/2
+    // Need 4 space for the time field
+    const int capacity = JSON_OBJECT_SIZE(6) + 2*JSON_ARRAY_SIZE(payload.length()/2);
+    DynamicJsonDocument doc(capacity);
+
+    update_current_local_time();
+    String src = "0x99";
+    doc["src"] = src;
+
+    update_current_local_time();
+    doc["time"] = now;
+    doc["data"] = payload;
+    
+    serializeJson(doc, message);
+    String topic = "data/" + HOSTNAME;
+    char topic_char_array[topic.length() + 1];
+    char message_char_array[message.length() + 1];
+
+    topic.toCharArray(topic_char_array, topic.length() + 1);
+    message.toCharArray(message_char_array, message.length() + 1);
+    Serial.print("Publishing to MQTT topic ' ");
+    Serial.print(topic);
+    Serial.print(" ':");
+    Serial.println(message);
+    Serial.println();
+    mqttClient.publish(topic_char_array, message_char_array);
+    
     yield();
 }

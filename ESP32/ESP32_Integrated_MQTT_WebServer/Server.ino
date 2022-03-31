@@ -9,6 +9,7 @@ void httpServerSetupAndStart()
     server.on("/wifiSaveAP", HTTP_GET, handleSetAPWiFiCredentials);
     server.on("/mqttSave", HTTP_GET, handleSetMQTTCredentials);
     server.on("/uplinkModeSave", HTTP_GET, handleSetUplinkMode);
+    server.on("/test_mqtt", HTTP_POST, handleTestMQTT);
     server.on("/restart", HTTP_POST, handleESPRestart);
     server.on("/factoryreset", HTTP_POST, handleFactoryReset);
 
@@ -230,7 +231,12 @@ void handleInfoPageLoad() {
   serializeJson(doc, jsonMap);
   server.send(200, "text/json", jsonMap);
 }
-
+void handleTestMQTT(){
+  Serial.println("[INFO] Publishing Test Packet to MQTT");
+  publish_test_data();
+  server.sendHeader("Location","/");
+  server.send(303);
+}
 void handleESPRestart(){
   Serial.println("[INFO] Restarting ESP32.");
   server.sendHeader("Location","/");
