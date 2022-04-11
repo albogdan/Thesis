@@ -35,7 +35,7 @@
 
 // The time (seconds) between gateway requesting data
 // Currently set to every 10 mins
-#define GATEWAY_REQ_TIME 60
+#define GATEWAY_REQ_TIME 180
 
 #define ESP_32_WAKEUP_PIN PB6
 #define ESP_32_READY_PIN PB7
@@ -86,7 +86,7 @@ void recieveResponse(byte *data, byte len, byte *srcAddr)
   // Initialize connection
   //PORTB |= (1 << PORTB6); // Wake up the ESP32, set ESP_32_WAKEUP_PIN high
   //PORTB &= ~(1 << PORTB6); // Allow the ESP32 to sleep, set ESP_32_WAKEUP_PIN low
-  ss.begin(57600);   // Begin serial channel
+  ss.begin(19200);   // Begin serial channel
 
   // Wait for the ESP32 to initialize
   while (!(PINB & (1<<PORTB7))) { // ESP_32_READY_PIN
@@ -114,7 +114,7 @@ void recieveResponse(byte *data, byte len, byte *srcAddr)
 
 void setup()
 {
-  Serial.begin(57600);
+  Serial.begin(19200);
 
   // Wait for serial port to connect.
   // Please comment out this while loop when using Adafruit feather or other ATmega32u4 boards 
