@@ -10,6 +10,7 @@
 #include <PubSubClient.h>
 
 #include "esp_sntp.h"
+#include "driver/adc.h"
 #include "driver/timer.h"
 #include "driver/rtc_io.h"
 
@@ -23,7 +24,7 @@
 #define UPLINK_MODE_CELLULAR 2
 
 String HOSTNAME = "ESP32_LORA";
-bool SLEEP_ENABLED = false;
+bool SLEEP_ENABLED = true;
 
 /* The default SSID and password for the access point */
 const char *ap_ssid = "ESP32AP";

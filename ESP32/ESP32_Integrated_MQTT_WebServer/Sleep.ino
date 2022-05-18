@@ -1,9 +1,13 @@
 
 /* --------------------- BEGIN SLEEP RELATED FUNCTIONS --------------------- */
-
 void hibernate_mode() {
     // Tell Arduino we're turning off
     digitalWrite(ARDUINO_SIGNAL_READY_PIN, LOW);
+
+    // Turn off the ADC power before sleeping
+    // https://esp32.com/viewtopic.php?t=20682
+    // https://github.com/espressif/arduino-esp32/issues/1113
+    adc_power_release();
 
     // Disable so even deeper sleep
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);

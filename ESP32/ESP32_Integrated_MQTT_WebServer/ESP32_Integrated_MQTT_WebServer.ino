@@ -77,6 +77,7 @@ void setup(void)
 
     configure_time();
   }
+  btStop();
 
   if (SLEEP_ENABLED) {
     // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
