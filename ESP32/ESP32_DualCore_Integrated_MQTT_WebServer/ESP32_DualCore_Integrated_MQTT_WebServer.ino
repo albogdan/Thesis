@@ -8,6 +8,8 @@ unsigned int uplink_connection_mode;
 
 PubSubClient mqttClient;
 
+TaskHandle_t CottonCandyGateway;
+
 void setup(void)
 {
   // Start the USB serial port
@@ -16,16 +18,34 @@ void setup(void)
   Serial.println("[SETUP] Serial0 setup complete");
 
   // Define the Arduino serial port and start it
-  SerialArduino.begin(ARDUINO_BAUD_RATE, SWSERIAL_8N1, RXD2, TXD2); // Hardware Serial
+  SerialArduino.begin(ARDUINO_BAUD_RATE, SWSERIAL_8N1, RXD2, TXD2); // Software Serial
   delay(10);
   Serial.println("[SETUP] SerialArduino setup complete");
-
+//
+//  xTaskCreatePinnedToCore(
+//                  handleCottonCandyGateway,   /* Task function. */
+//                  "CottonCandyGateway",     /* name of task. */
+//                  10000,       /* Stack size of task */
+//                  NULL,        /* parameter of the task */
+//                  1,           /* priority of the task */
+//                  &CottonCandyGateway,      /* Task handle to keep track of created task */
+//                  0);          /* pin task to core 0 */          
+//
   Serial.print("[INFO] setup() running on core ");
   Serial.println(xPortGetCoreID());
 
   // Start the SPI Flash Files System
   Serial.println("[INFO] Starting SPI Flash File System");
   SPIFFS.begin();
+
+  // Set the NetID if it doesn't exist
+  if (!SPIFFS.exists("/net_id.json")) {
+    setNetId("12332122");
+  }
+  
+  getNetId(network_id);
+  Serial.print("[INFO] NetworkID: ");
+  Serial.println(network_id);
 
   // If there is no default uplink_mode.json, create it and
   // set default mode as WiFi
@@ -82,7 +102,7 @@ void setup(void)
   }
   btStop();
 
-  if (SLEEP_ENABLED) {
+  if (false) {
     // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
     Serial.println("[INFO] Initializing sleep timer");
     initialize_sleep_timer(SLEEP_TIMER_SECONDS);
@@ -113,13 +133,14 @@ void loop(void)
   if (byte_array_complete)
   {
     // Publish the string to MQTT
+    Serial.println("[INFO] Publishing");
     parse_input_string(input_byte_array);
 
     // Clear the byte array: reset the index pointer
     input_byte_array_index = 0;
     byte_array_complete = false;
   }
-
+  /*
   // Check if there's anything in the SerialArduino buffer
   while (SerialArduino.available())
   {
@@ -135,15 +156,48 @@ void loop(void)
     if (inByte == '\n')
     {
       byte_array_complete = true;
+      break;
+    }
+  }
+  */
+
+  while (SerialArduino.available()) {
+    if (input_byte_array_index < 2) { // Receive the src
+      input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
+      input_byte_array_index += 1;
+      Serial.println("[INFO] src complete");
+    } else if (input_byte_array_index == 2) { // Receive the length
+      input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
+      input_byte_array_index += 1;
+      Serial.println("[INFO] len complete");
+    } else if (input_byte_array_index > 2 && input_byte_array_index < input_byte_array[2] + 2) { // Receive the data
+      input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
+      input_byte_array_index += 1;
+      Serial.println("[INFO] data complete");
+    } else if (input_byte_array_index == input_byte_array[2] + 2) { // Receive the data
+      input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
+      input_byte_array_index += 1;
+      byte_array_complete = true;
+      Serial.println("[INFO] Byte array complete");
+      break;
+
+    } else {
+      Serial.print("[ERROR] Invalid array index:");
+      Serial.println(input_byte_array_index);
     }
   }
 
+  
   // Allow the CPU to handle HTTP requests
   server.handleClient();
   delay(2); //allow the cpu to switch to other tasks
 //  update_current_local_time();
 //  Serial.println(strftime_buf);
 }
+
+// Data length < 100
+// Address cannot be 0x00 or 0xFF
+// Remove println in gateway code
 
 void configure_time() {
   if (cellular_connection_status == CELLULAR_CONNECTION_SUCCESS) {

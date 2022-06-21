@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3>ESP32 Config Portal</h3><hr><br>
+			<div><a href='uplink_mode.html'><button>Configure Uplink</button></a></div>
+			<div><a href='sta_wifi.html'><button>Connect WiFi Network</button></a></div>
+			<div><a href='ap_wifi.html'><button>Configure Local Access Point</button></a></div>
+			<div><a href='mqtt.html'><button>Configure MQTT</button></a></div>
+			<div><a href='info.html'><button>Station Info</button></a></div>
+			<div><form action='/test_mqtt' method='post'><button>Publish Test Packet</button></form></div>
+			<div><form action='/restart' method='post'><button class='Y'>Restart</button></form></div>
+			<div><form action='/factoryreset' method='post'><button class='R'>Factory Reset</button></form></div>
+
+    </div>
+	</body>
+</html>
+

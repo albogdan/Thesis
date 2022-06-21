@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3 id="wifi_header">Configure Uplink</h3><hr>
+			<div class="" id="encryption_select">
+                <form method='get' action='uplinkModeSave'>
+                    <div>
+					<label for="uplink_mode">Uplink Mode</label>
+					<br>
+                    <select id="uplink_mode" name="uplink_mode">
+                        <option value="null">Select Uplink</option>
+                        <option value="wifi">WiFi Connection</option>
+                        <option value="cellular">Cellular Connection</option>
+                    </select>
+                    </div>
+                    <br>
+                    <div><button type='submit'>Save</button></div>
+                </form>
+			</div>
+			<br><hr>
+			<div>
+				<a href='/'><button>Back</button></a><br/>
+			</div>
+    </div>
+	<script src="jquery-3.6.0.min.js"></script>
+	<!-- <script src="gateway_mode.js"></script> -->
+	</body>
+</html>

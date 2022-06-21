@@ -1,37 +1,102 @@
-#include <ESP32Ping.h>
-
 long lastReconnectAttempt = 0;
-IPAddress server_ip_address; // The remote ip to ping
 
 bool setupAndConnectToMqtt() {
   Serial.println("[INFO] Getting MQTT server credentials");
   MQTTCredentials credentials;
   if (getMQTTCredentials(&credentials)) {
     Serial.println("[SETUP] Checking if MQTT server exists");
-    
-    server_ip_address.fromString(credentials.server_ip);
-    bool ping_success;
-    if (uplink_connection_mode == UPLINK_MODE_WIFI) {
-      ping_success = Ping.ping(server_ip_address, 2);
-    } else {
-      ping_success = true; // TODO: IMPLEMENT PING FOR THE CELLULAR SHIELD
-    }
-    if (ping_success) {
-      
-      setupMqtt(credentials.server_ip, credentials.port);
-    
-      return connectToMqtt(credentials.username, credentials.password);
-    } else {
-      Serial.println("[ERROR] MQTT server ping failed");
-      return false;
-    }
+    bool ping_success = true;//WiFi.ping(credentials.server_ip); //Ping 3 times
+    mqtt_app_start(&credentials);
+
   }
   return false;
 }
 
+static void mqtt_app_start(MQTTCredentials *credentials)
+{
+    esp_mqtt_client_config_t mqtt_cfg;
+    
+    
+//    mqtt_cfg.event_handle = mqtt_event_handler;/
+//    mqtt_cfg.host = credentials->server_ip;
+//    mqtt_cfg.port = strtol(credentials->port, NULL, 10);
+//    mqtt_cfg.username = credentials->username;
+//    mqtt_cfg.password = credentials->password;
+    //mqtt_cfg.host = "142.150.235.12";
+    mqtt_cfg.uri = "mqtt://student:ece1528@142.150.235.12:1883";
+//    mqtt_cfg.host = NULL;/
+    //mqtt_cfg.port = 1883;
+    //mqtt_cfg.username = "student";
+    //mqtt_cfg.password = "ece1528";
+
+    //ESP_LOGI(TAG, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
+    Serial.println("Setting up client");
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
+    Serial.println("Starting client");
+    esp_mqtt_client_start(client);
+}
+
+static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+{
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
+    esp_mqtt_event_handle_t event = event_data;
+    esp_mqtt_client_handle_t client = event->client;
+    int msg_id;
+    switch ((esp_mqtt_event_id_t)event_id) {
+    case MQTT_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        msg_id = esp_mqtt_client_publish(client, "/topic/qos1", "data_3", 0, 1, 0);
+        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
+        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
+        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+
+        msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
+        ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
+        break;
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+        break;
+
+    case MQTT_EVENT_SUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
+        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        break;
+    case MQTT_EVENT_UNSUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+    case MQTT_EVENT_PUBLISHED:
+        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        break;
+    case MQTT_EVENT_DATA:
+        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        break;
+    case MQTT_EVENT_ERROR:
+        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+            log_error_if_nonzero("reported from esp-tls", event->error_handle->esp_tls_last_esp_err);
+            log_error_if_nonzero("reported from tls stack", event->error_handle->esp_tls_stack_err);
+            log_error_if_nonzero("captured as transport's socket errno",  event->error_handle->esp_transport_sock_errno);
+            ESP_LOGI(TAG, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
+
+        }
+        break;
+    default:
+        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+        break;
+    }
+}
+
+
 void setupMqtt(char *mqttServer, char *mqttPort)
 {
-    Serial.println("[SETUP] Setting up MQTT server...");
     mqttClient.setServer(mqttServer, atoi(mqttPort));
     mqttClient.setCallback(callbackMqtt);
     mqttClient.setBufferSize(1024);   // MAKE SURE TO CHECK THAT THIS IS BIG ENOUGH

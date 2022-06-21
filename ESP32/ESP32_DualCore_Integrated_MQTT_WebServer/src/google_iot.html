@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html lang="en">
+	<head>
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>
+		<title>ESP32 Config Portal</title>
+		<link rel="stylesheet" href="index.css">
+		<script>
+		function c(l){document.getElementById('s').value=l.innerText||l.textContent;
+		p = l.nextElementSibling.classList.contains('l');
+		document.getElementById('p').disabled = !p;
+		if(p)document.getElementById('p').focus()};
+		</script>
+	</head>
+	<body class="invert">
+		<div class='wrap'>
+			<h3>Configure Google IoT Cloud</h3><hr>
+			<form method='get' action='googleIOTSave'>
+				<div>
+					<label for='project_id'>Project ID</label><br/>
+					<input id='project_id' name='project_id' length=64 placeholder='Enter Project ID' required><br/>
+				</div>
+				<div>
+					<label for='location'>Server Location</label>
+					<input id='location' name='location' length=64 type='port' placeholder='Enter Server Location' required><br/>
+				</div>
+				<div>
+					<label for='registry_id'>Registry ID</label><br/>
+					<input id='registry_id' name='registry_id' length=64 placeholder='Enter Registry ID'  required><br/>
+				</div>
+				<div>
+					<label for='device_id'>Device ID</label>
+					<input id='device_id' name='device_id' length=64 placeholder='Enter Device ID' required><br/>
+				</div>
+				<div>
+					<label for='private_key_str'>Private Key String</label>
+					<input id='private_key_str' name='private_key_str' length=64 placeholder='Enter Private Key String' required><br/>
+				</div>
+				<div>
+					<label for='root_cert'>Root Certificate</label>
+					<input id='root_cert' name='root_cert' length=64 placeholder='Enter Root Certificate' required><br/>
+				</div>
+				<br>
+				<div><button type='submit'>Save</button></div>
+			</form>
+			<br><hr>
+			<div>
+				<a href='/'><button>Back</button></a><br/>
+			</div>
+    </div>
+	</body>
+</html>

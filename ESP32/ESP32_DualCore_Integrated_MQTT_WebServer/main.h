@@ -43,6 +43,18 @@ typedef struct mqtt_credentials{
     char password [50];
 } MQTTCredentials;
 
+char network_id[8];
+
+typedef struct google_iot_credentials{
+    char project_id[64];
+    char location[32];
+    char registry_id[32];
+    char device_id[32];
+    char private_key_str[128];
+    char root_cert[1024];
+} GoogleIOTCredentials;
+
+
 /* ----- BEGIN PACKET INFORMATION AND DEFINITIONS ----- */
 //              Message parts and sizes diagram
 // |  src  |  message len  |  gateway addr  | other info |  data  |
@@ -74,7 +86,7 @@ bool byte_array_complete = false;
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
-#define SLEEP_TIMER_SECONDS 10 // Amount of time to wait until trying to go into hibernation mode
+#define SLEEP_TIMER_SECONDS 7 // Amount of time to wait until trying to go into hibernation mode
 #define RTC_GPIO_WAKEUP_PIN GPIO_NUM_4        // D4
 #define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_5   // D5
 

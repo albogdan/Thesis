@@ -10,9 +10,19 @@
 #include <PubSubClient.h>
 
 #include "esp_sntp.h"
-#include "driver/adc.h"
 #include "driver/timer.h"
 #include "driver/rtc_io.h"
+
+#include "esp_event_loop.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+#include "freertos/event_groups.h"
+#include "esp_wifi.h"
+#include "esp_system.h"
+#include "mqtt_client.h"
 
 #define WIFI_AP_CONNECTED 1
 #define WIFI_APSTA_CONNECTED 2

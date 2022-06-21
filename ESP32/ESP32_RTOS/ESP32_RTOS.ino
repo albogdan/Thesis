@@ -20,9 +20,6 @@ void setup(void)
   delay(10);
   Serial.println("[SETUP] SerialArduino setup complete");
 
-  Serial.print("[INFO] setup() running on core ");
-  Serial.println(xPortGetCoreID());
-
   // Start the SPI Flash Files System
   Serial.println("[INFO] Starting SPI Flash File System");
   SPIFFS.begin();
@@ -44,25 +41,6 @@ void setup(void)
 
     // Define the MQTT client
     mqttClient = mqttClientWiFi;
-
-  } else if (uplink_connection_mode == UPLINK_MODE_CELLULAR) {
-    // Start the WiFi AP
-    WiFi.hostname(HOSTNAME);
-    WiFi.mode(WIFI_MODE_AP);
-    connectToAPWiFi();
-    wifi_connection_status = WIFI_AP_CONNECTED;
-
-    // Define the MQTT client
-    mqttClient = mqttClientCellular;
-    delay(6000);
-    // Connect to Cellular
-    //SerialCellular.begin(GSM_BAUD_RATE, SWSERIAL_8N1, RXCellular, TXCellular); // Software Serial, known baud rate
-    SerialCellular.begin(115200);
-    //TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
-
-    delay(500);
-    Serial.println("[SETUP] Cellular Serial Setup Complete");
-    cellular_connection_status = connectToCellular();
   }
 
   // Set up and start the HTTP server for configurations
@@ -80,7 +58,6 @@ void setup(void)
 
     configure_time();
   }
-  btStop();
 
   if (SLEEP_ENABLED) {
     // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
@@ -95,15 +72,8 @@ void setup(void)
 
 }
 
-bool first_loop = true;
-
 void loop(void)
 {
-  if (first_loop) {
-    Serial.print("[INFO] loop() running on core ");
-    Serial.println(xPortGetCoreID());
-    first_loop = false;
-  }
   if(mqtt_connection_made) {
     mqttClient.loop();
 //    loop_and_check_mqtt_connection();
