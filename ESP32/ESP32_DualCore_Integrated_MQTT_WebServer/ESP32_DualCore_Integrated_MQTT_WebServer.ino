@@ -1,4 +1,5 @@
 #include "main.h"
+#include "esp32-mqtt.h"
 
 bool mqtt_connection_made = false;
 unsigned int wifi_connection_status = false;
@@ -9,6 +10,8 @@ unsigned int uplink_connection_mode;
 PubSubClient mqttClient;
 
 TaskHandle_t CottonCandyGateway;
+
+GoogleIOTCredentials credentials;
 
 void setup(void)
 {
@@ -21,16 +24,16 @@ void setup(void)
   SerialArduino.begin(ARDUINO_BAUD_RATE, SWSERIAL_8N1, RXD2, TXD2); // Software Serial
   delay(10);
   Serial.println("[SETUP] SerialArduino setup complete");
-//
-//  xTaskCreatePinnedToCore(
-//                  handleCottonCandyGateway,   /* Task function. */
-//                  "CottonCandyGateway",     /* name of task. */
-//                  10000,       /* Stack size of task */
-//                  NULL,        /* parameter of the task */
-//                  1,           /* priority of the task */
-//                  &CottonCandyGateway,      /* Task handle to keep track of created task */
-//                  0);          /* pin task to core 0 */          
-//
+  //
+  //  xTaskCreatePinnedToCore(
+  //                  handleCottonCandyGateway,   /* Task function. */
+  //                  "CottonCandyGateway",     /* name of task. */
+  //                  10000,       /* Stack size of task */
+  //                  NULL,        /* parameter of the task */
+  //                  1,           /* priority of the task */
+  //                  &CottonCandyGateway,      /* Task handle to keep track of created task */
+  //                  0);          /* pin task to core 0 */
+  //
   Serial.print("[INFO] setup() running on core ");
   Serial.println(xPortGetCoreID());
 
@@ -39,33 +42,38 @@ void setup(void)
   SPIFFS.begin();
 
   // Set the NetID if it doesn't exist
-  if (!SPIFFS.exists("/net_id.json")) {
+  if (!SPIFFS.exists("/net_id.json"))
+  {
     setNetId("12332122");
   }
-  
+
   getNetId(network_id);
   Serial.print("[INFO] NetworkID: ");
   Serial.println(network_id);
 
   // If there is no default uplink_mode.json, create it and
   // set default mode as WiFi
-  if (!SPIFFS.exists("/uplink_mode.json")) {
+  if (!SPIFFS.exists("/uplink_mode.json"))
+  {
     uplink_connection_mode = UPLINK_MODE_WIFI;
     saveUplinkMode(UPLINK_MODE_WIFI);
-  } else {
+  }
+  else
+  {
     getUplinkMode(&uplink_connection_mode);
   }
 
-  
-  if (uplink_connection_mode == UPLINK_MODE_WIFI) {
+  if (uplink_connection_mode == UPLINK_MODE_WIFI)
+  {
     // Connect to the WiFi network
     Serial.println("[INFO] Connecting to WiFi");
     wifi_connection_status = connectToWiFi();
 
     // Define the MQTT client
     mqttClient = mqttClientWiFi;
-
-  } else if (uplink_connection_mode == UPLINK_MODE_CELLULAR) {
+  }
+  else if (uplink_connection_mode == UPLINK_MODE_CELLULAR)
+  {
     // Start the WiFi AP
     WiFi.hostname(HOSTNAME);
     WiFi.mode(WIFI_MODE_AP);
@@ -76,9 +84,9 @@ void setup(void)
     mqttClient = mqttClientCellular;
     delay(6000);
     // Connect to Cellular
-    //SerialCellular.begin(GSM_BAUD_RATE, SWSERIAL_8N1, RXCellular, TXCellular); // Software Serial, known baud rate
+    // SerialCellular.begin(GSM_BAUD_RATE, SWSERIAL_8N1, RXCellular, TXCellular); // Software Serial, known baud rate
     SerialCellular.begin(115200);
-    //TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
+    // TinyGsmAutoBaud(SerialCellular, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX); // Use when baud rate unknown, Hardware Serial
 
     delay(500);
     Serial.println("[SETUP] Cellular Serial Setup Complete");
@@ -93,16 +101,23 @@ void setup(void)
   setenv("TZ", "EST5EDT4,M3.2.0/02:00:00,M11.1.0/02:00:00", 1);
   tzset();
 
-  if(wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS) {
+  if (wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS)
+  {
     mqtt_connection_made = setupAndConnectToMqtt();
     if (!mqtt_connection_made)
       Serial.println("[ERROR] MQTT connection unsuccessful");
+
+    if (wifi_connection_status == WIFI_APSTA_CONNECTED && getGoogleIoTCredentials(&credentials))
+    {
+      setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
+    }
 
     configure_time();
   }
   btStop();
 
-  if (false) {
+  if (false)
+  {
     // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
     Serial.println("[INFO] Initializing sleep timer");
     initialize_sleep_timer(SLEEP_TIMER_SECONDS);
@@ -112,23 +127,24 @@ void setup(void)
   Serial.println("[SETUP] Boot sequence complete.");
   pinMode(ARDUINO_SIGNAL_READY_PIN, OUTPUT);
   digitalWrite(ARDUINO_SIGNAL_READY_PIN, HIGH);
-
 }
 
 bool first_loop = true;
 
 void loop(void)
 {
-  if (first_loop) {
+  if (first_loop)
+  {
     Serial.print("[INFO] loop() running on core ");
     Serial.println(xPortGetCoreID());
     first_loop = false;
   }
-  if(mqtt_connection_made) {
+  if (mqtt_connection_made)
+  {
     mqttClient.loop();
-//    loop_and_check_mqtt_connection();
+    //    loop_and_check_mqtt_connection();
   }
-  
+
   // Check if we received a complete string through SerialArduino
   if (byte_array_complete)
   {
@@ -151,7 +167,7 @@ void loop(void)
     input_byte_array[input_byte_array_index] = inByte;
     input_byte_array_index += 1;
 
-    // If the incoming character is a newline, set a flag so 
+    // If the incoming character is a newline, set a flag so
     // the main loop can do something about it:
     if (inByte == '\n')
     {
@@ -161,57 +177,67 @@ void loop(void)
   }
   */
 
-  while (SerialArduino.available()) {
-    if (input_byte_array_index < 2) { // Receive the src
+  while (SerialArduino.available())
+  {
+    if (input_byte_array_index < 2)
+    { // Receive the src
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
       Serial.println("[INFO] src complete");
-    } else if (input_byte_array_index == 2) { // Receive the length
+    }
+    else if (input_byte_array_index == 2)
+    { // Receive the length
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
       Serial.println("[INFO] len complete");
-    } else if (input_byte_array_index > 2 && input_byte_array_index < input_byte_array[2] + 2) { // Receive the data
+    }
+    else if (input_byte_array_index > 2 && input_byte_array_index < input_byte_array[2] + 2)
+    { // Receive the data
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
       Serial.println("[INFO] data complete");
-    } else if (input_byte_array_index == input_byte_array[2] + 2) { // Receive the data
+    }
+    else if (input_byte_array_index == input_byte_array[2] + 2)
+    { // Receive the data
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
       byte_array_complete = true;
       Serial.println("[INFO] Byte array complete");
       break;
-
-    } else {
+    }
+    else
+    {
       Serial.print("[ERROR] Invalid array index:");
       Serial.println(input_byte_array_index);
     }
   }
 
-  
   // Allow the CPU to handle HTTP requests
   server.handleClient();
-  delay(2); //allow the cpu to switch to other tasks
-//  update_current_local_time();
-//  Serial.println(strftime_buf);
+  delay(2); // allow the cpu to switch to other tasks
+  //  update_current_local_time();
+  //  Serial.println(strftime_buf);
 }
 
 // Data length < 100
 // Address cannot be 0x00 or 0xFF
 // Remove println in gateway code
 
-void configure_time() {
-  if (cellular_connection_status == CELLULAR_CONNECTION_SUCCESS) {
+void configure_time()
+{
+  if (cellular_connection_status == CELLULAR_CONNECTION_SUCCESS)
+  {
     Serial.println("[SETUP] Waiting for system time to be set from cellular...");
     cellular_modem.NTPServerSync();
-    int   year3    = 0;
-    int   month3   = 0;
-    int   day3     = 0;
-    int   hour3    = 0;
-    int   min3     = 0;
-    int   sec3     = 0;
+    int year3 = 0;
+    int month3 = 0;
+    int day3 = 0;
+    int hour3 = 0;
+    int min3 = 0;
+    int sec3 = 0;
     float timezone = 0;
     cellular_modem.getNetworkTime(&year3, &month3, &day3, &hour3, &min3, &sec3,
-                             &timezone);
+                                  &timezone);
     timeinfo.tm_sec = sec3;
     timeinfo.tm_min = min3;
     timeinfo.tm_hour = hour3;
@@ -221,29 +247,32 @@ void configure_time() {
 
     now = mktime(&timeinfo);
     timeval time_now;
-    time_now.tv_sec = now; //Assign time_here to this object.
-    time_now.tv_usec = 0; //As time_t can hold only seconds.
+    time_now.tv_sec = now; // Assign time_here to this object.
+    time_now.tv_usec = 0;  // As time_t can hold only seconds.
 
     settimeofday(&time_now, NULL);
-
-  } else if(wifi_connection_status == WIFI_APSTA_CONNECTED) {
+  }
+  else if (wifi_connection_status == WIFI_APSTA_CONNECTED)
+  {
     // Setup periodic synch with the NTP server
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
     sntp_init();
 
     // If the year is not correct, sync it up
-    if (timeinfo.tm_year < (2019 - 1900)) {
-        int retry = 0;
-        const int retry_count = 10;
-        while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
-            Serial.print("[SETUP] Waiting for system time to be set through NTP...(");
-            Serial.print(retry);
-            Serial.print("/");
-            Serial.print(retry_count);
-            Serial.println(")");
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
-        }
+    if (timeinfo.tm_year < (2019 - 1900))
+    {
+      int retry = 0;
+      const int retry_count = 10;
+      while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count)
+      {
+        Serial.print("[SETUP] Waiting for system time to be set through NTP...(");
+        Serial.print(retry);
+        Serial.print("/");
+        Serial.print(retry_count);
+        Serial.println(")");
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+      }
     }
   }
   Serial.print("[INFO] The current time is: ");
@@ -251,10 +280,9 @@ void configure_time() {
   Serial.println(strftime_buf);
 }
 
-
 void update_current_local_time()
 {
-  time(&now); // Update the time
-  localtime_r(&now, &timeinfo); // Convert to the timeinfo variable
+  time(&now);                                                    // Update the time
+  localtime_r(&now, &timeinfo);                                  // Convert to the timeinfo variable
   strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo); // Print the timeinfo variable
 }
