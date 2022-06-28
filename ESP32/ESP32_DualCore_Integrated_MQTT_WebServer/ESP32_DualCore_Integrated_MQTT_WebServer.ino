@@ -8,6 +8,7 @@ unsigned int cellular_connection_status = false;
 unsigned int uplink_connection_mode;
 
 PubSubClient mqttClient;
+unsigned long lastMillis = 0;
 
 TaskHandle_t CottonCandyGateway;
 
@@ -44,7 +45,8 @@ void setup(void)
   // Set the NetID if it doesn't exist
   if (!SPIFFS.exists("/net_id.json"))
   {
-    setNetId("12332122");
+    char q[] = "12332122";
+    setNetId(q);
   }
 
   getNetId(network_id);
@@ -141,7 +143,33 @@ void loop(void)
   }
   if (mqtt_connection_made)
   {
-    mqttClient.loop();
+    Serial.println("MQTT connection made");
+    // mqttClient.loop();
+    mqtt->loop();
+
+    delay(10); // <- fixes some issues with WiFi stability
+
+    if (!google_mqttClient->connected())
+    {
+      connect();
+    }
+
+    if (millis() - lastMillis > 6000)
+    {
+      lastMillis = millis();
+      // publishTelemetry(mqttClient, "/sensors", getDefaultSensor());
+      Serial.println("Trying to publish message");
+      // if (publishTopic1(getDefaultTestData()))
+      // {
+      //   Serial.println("Successfully published messsage!");
+      // }
+      // else
+      // {
+      //   Serial.println("Failed to publish messsage!");
+      // }
+      // publishTelemetry();
+    }
+
     //    loop_and_check_mqtt_connection();
   }
 
