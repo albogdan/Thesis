@@ -10,12 +10,12 @@ bool setupAndConnectToMqtt() {
     Serial.println("[SETUP] Checking if MQTT server exists");
     
     server_ip_address.fromString(credentials.server_ip);
-    bool ping_success;
-    if (uplink_connection_mode == UPLINK_MODE_WIFI) {
+    bool ping_success = true;
+    /*if (uplink_connection_mode == UPLINK_MODE_WIFI) {
       ping_success = Ping.ping(server_ip_address, 2);
     } else {
       ping_success = true; // TODO: IMPLEMENT PING FOR THE CELLULAR SHIELD
-    }
+    }*/
     if (ping_success) {
       
       setupMqtt(credentials.server_ip, credentials.port);
@@ -46,6 +46,7 @@ boolean connectToMqtt(char *username, char *password)
     Serial.println("[SETUP] Connecting to MQTT...");
     if (mqttClient.connected()) {
       Serial.println("[INFO] MQTT Client is already connected!");
+      return true;
     }else if (mqttClient.connect(hostname_char, username, password))
     { //, mqttUser, mqttPassword )) {
         Serial.print("[INFO] MAC: ");
