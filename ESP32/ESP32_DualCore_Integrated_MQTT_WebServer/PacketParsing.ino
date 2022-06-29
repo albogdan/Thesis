@@ -56,7 +56,7 @@ void parse_input_string(byte *input_byte_array) {
       /*Serial.print("Message: ");
       Serial.println(packet.data_value);
       Serial.println(packet.data_value, HEX);*/
-      publish_packet_to_mqtt(packet);
+      convert_packet_to_json(packet);
       //print_packet(packet);
     }
 }
@@ -73,32 +73,106 @@ void print_packet(Packet payload){
     Serial.println("}");  
 }
 
-void publish_packet_to_mqtt(Packet payload) {
+void convert_packet_to_json(Packet payload) {
     String message;
     // 2 static fields + two arrays of size message_length/2
     // Need 4 space for the time field
     const int capacity = JSON_OBJECT_SIZE(6) + 2*JSON_ARRAY_SIZE(payload.message_length/2);
     DynamicJsonDocument doc(capacity);
 
-    update_current_local_time();
+    update_current_local_datetime();
     String src = "0x" + String(0 | (payload.src[0] << 8) | payload.src[1], HEX);
     doc["src"] = src;
 
-    update_current_local_time();
+    update_current_local_datetime();
     doc["time"] = now;
     doc["data"] = payload.data_value;
     
     serializeJson(doc, message);
-    String topic = "data/" + HOSTNAME;
-    char topic_char_array[topic.length() + 1];
+    message = message + String('\n');
     char message_char_array[message.length() + 1];
 
-    topic.toCharArray(topic_char_array, topic.length() + 1);
     message.toCharArray(message_char_array, message.length() + 1);
+
+    // Publish the packet to the MQTT broker
+    publish_packet_to_mqtt(message_char_array);
+
+    // Save the packet to the SD card
+    write_packet_to_sd_card(message_char_array);
+    
+    yield();
+}
+    
+void write_packet_to_sd_card(char *message_char_array){
+    update_current_local_date();
+    String date_now = strftime_buf;
+    update_current_local_time();
+    String time_now = strftime_buf;
+    Serial.print("Date: ");
+    Serial.println(date_now);
+    Serial.print("Time: ");
+    Serial.println(time_now);
+    //String file_location = "/" + date_now + "/" + time_now + ".txt";
+    //String folder = "/" + date_now;
+    String file_location = "/" + date_now + ".txt";
+    
+    char file_location_char_array[file_location.length() + 1];
+    //char folder_char_array[folder.length() + 1];
+    
+    file_location.toCharArray(file_location_char_array, file_location.length() + 1);
+    //folder.toCharArray(folder_char_array, folder.length() + 1);
+
+    Serial.print("File location: ");
+    Serial.println(file_location);
+    // Check if the folder exists
+    /*if (!SD.exists(folder_char_array)) {
+      Serial.print("Creating directory:");
+      Serial.print(folder_char_array);
+      createDir(SD, folder_char_array);
+    } else {
+      Serial.print("Directory:");
+      Serial.print(folder_char_array);
+      Serial.println(" already exists"); 
+    }*/
+    
+    if (SD.exists(file_location)){
+      Serial.println("File exists, appending");
+      appendFile(SD, file_location_char_array, message_char_array);
+    } else {
+      Serial.println("File does not exist, creating");
+      writeFile(SD, file_location_char_array, message_char_array);
+    }
+}
+
+
+void publish_packet_to_mqtt(char *message_char_array) {
+ 
+    /*String message;
+    // 2 static fields + two arrays of size message_length/2
+    // Need 4 space for the time field
+    const int capacity = JSON_OBJECT_SIZE(6) + 2*JSON_ARRAY_SIZE(payload.message_length/2);
+    DynamicJsonDocument doc(capacity);
+
+    update_current_local_datetime();
+    String src = "0x" + String(0 | (payload.src[0] << 8) | payload.src[1], HEX);
+    doc["src"] = src;
+
+    update_current_local_datetime();
+    doc["time"] = now;
+    doc["data"] = payload.data_value;
+    
+    serializeJson(doc, message);
+    */
+    String topic = "data/" + HOSTNAME;
+    char topic_char_array[topic.length() + 1];
+    //char message_char_array[message.length() + 1];
+
+    topic.toCharArray(topic_char_array, topic.length() + 1);
+    //message.toCharArray(message_char_array, message.length() + 1);
     Serial.print("Publishing to MQTT topic ' ");
     Serial.print(topic);
     Serial.print(" ':");
-    Serial.println(message);
+    Serial.println(message_char_array);
     Serial.println();
     Serial.println("----END MESSAGE----\n");
     mqttClient.publish(topic_char_array, message_char_array);

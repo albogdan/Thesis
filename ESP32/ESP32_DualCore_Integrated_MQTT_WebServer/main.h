@@ -14,6 +14,10 @@
 #include "driver/timer.h"
 #include "driver/rtc_io.h"
 
+// SD Card includes
+#include "SD.h"
+#include "SPI.h"
+
 #define WIFI_AP_CONNECTED 1
 #define WIFI_APSTA_CONNECTED 2
 
@@ -132,6 +136,32 @@ const char gprsUser[] = "";
 const char gprsPass[] = "";
 
 /* ----- END CELLULAR CONNECTION VARIABLES ----- */
+
+
+/* ----- BEGIN SD CARD VARIABLES ----- */
+
+/* SD Card | ESP32
+ *    D2       -
+ *    CS       CS (D15)
+ *    DI       MOSI (D13)
+ *    GND      GND
+ *    VIN      5V
+ *    CLK      SCLK (D14)
+ *    DO       MISO (D12)
+ */
+#define HSPI_MISO 12
+#define HSPI_MOSI 13
+#define HSPI_SCLK 14
+#define HSPI_CS 2
+#define VSPI_MISO 19
+#define VSPI_MOSI 23
+#define VSPI_SCLK 18
+#define VSPI_CS 5
+
+
+SPIClass *spi = NULL;
+
+/* ----- END SD CARD VARIABLES ----- */
 
 
 WiFiClient espClient;

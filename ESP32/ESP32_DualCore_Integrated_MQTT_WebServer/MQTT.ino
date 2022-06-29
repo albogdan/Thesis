@@ -251,11 +251,11 @@ void publish_test_data() {
     const int capacity = JSON_OBJECT_SIZE(6) + 2*JSON_ARRAY_SIZE(payload.length()/2);
     DynamicJsonDocument doc(capacity);
 
-    update_current_local_time();
+    update_current_local_datetime();
     String src = "0x99";
     doc["src"] = src;
 
-    update_current_local_time();
+    update_current_local_datetime();
     doc["time"] = now;
     doc["data"] = payload;
     
@@ -266,6 +266,9 @@ void publish_test_data() {
 
     topic.toCharArray(topic_char_array, topic.length() + 1);
     message.toCharArray(message_char_array, message.length() + 1);
+
+    write_packet_to_sd_card(message_char_array);
+    
     Serial.print("Publishing to MQTT topic ' ");
     Serial.print(topic);
     Serial.print(" ':");

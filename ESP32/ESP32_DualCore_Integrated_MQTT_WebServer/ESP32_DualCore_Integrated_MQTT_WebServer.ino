@@ -1,6 +1,7 @@
 #include "main.h"
 
 bool mqtt_connection_made = false;
+bool sd_card_connection_made = false;
 unsigned int wifi_connection_status = false;
 unsigned int cellular_connection_status = false;
 
@@ -37,7 +38,7 @@ void setup(void)
   // Start the SPI Flash Files System
   Serial.println("[INFO] Starting SPI Flash File System");
   SPIFFS.begin();
-
+   
   // Set the NetID if it doesn't exist
   if (!SPIFFS.exists("/net_id.json")) {
     setNetId("12332122");
@@ -46,6 +47,12 @@ void setup(void)
   getNetId(network_id);
   Serial.print("[INFO] NetworkID: ");
   Serial.println(network_id);
+
+  // Setup the SD Card
+  sd_card_connection_made = setupSDCard();
+
+  // List files in the root directory
+  listDir(SD, "/", 1);
 
   // If there is no default uplink_mode.json, create it and
   // set default mode as WiFi
@@ -191,7 +198,7 @@ void loop(void)
   // Allow the CPU to handle HTTP requests
   server.handleClient();
   delay(2); //allow the cpu to switch to other tasks
-//  update_current_local_time();
+//  update_current_local_datetime();
 //  Serial.println(strftime_buf);
 }
 
@@ -247,14 +254,29 @@ void configure_time() {
     }
   }
   Serial.print("[INFO] The current time is: ");
-  update_current_local_time();
+  update_current_local_datetime();
   Serial.println(strftime_buf);
 }
 
+
+void update_current_local_datetime()
+{
+  time(&now); // Update the time
+  localtime_r(&now, &timeinfo); // Convert to the timeinfo variable
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo); // Print the timeinfo variable
+}
+
+
+void update_current_local_date()
+{
+  time(&now); // Update the time
+  localtime_r(&now, &timeinfo); // Convert to the timeinfo variable
+  strftime(strftime_buf, sizeof(strftime_buf), "%F", &timeinfo); // Print the timeinfo variable
+}
 
 void update_current_local_time()
 {
   time(&now); // Update the time
   localtime_r(&now, &timeinfo); // Convert to the timeinfo variable
-  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo); // Print the timeinfo variable
+  strftime(strftime_buf, sizeof(strftime_buf), "%H-%M-%S", &timeinfo); // Print the timeinfo variable
 }
