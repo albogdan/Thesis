@@ -159,10 +159,10 @@ void loop(void)
       lastMillis = millis();
       // publishTelemetry(mqttClient, "/sensors", getDefaultSensor());
       Serial.println("Trying to publish message");
-      // if (publishTopic1(getDefaultTestData()))
-      // {
-      //   Serial.println("Successfully published messsage!");
-      // }
+      if (publishTopic1(getDefaultTestData()))
+      {
+        //   Serial.println("Successfully published messsage!");
+      }
       // else
       // {
       //   Serial.println("Failed to publish messsage!");
@@ -284,7 +284,7 @@ void configure_time()
   {
     // Setup periodic synch with the NTP server
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
+    sntp_setservername(0, (char *)ntp_primary);
     sntp_init();
 
     // If the year is not correct, sync it up

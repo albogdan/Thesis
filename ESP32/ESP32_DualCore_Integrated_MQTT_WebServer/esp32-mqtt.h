@@ -13,13 +13,13 @@
  * limitations under the License.
  *****************************************************************************/
 // This file contains static methods for API requests using Wifi / MQTT
+#include <CloudIoTCoreMqtt.h>
 #include <Client.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
 
 #include <CloudIoTCore.h>
-#include <CloudIoTCoreMqtt.h>
 
 const int jwt_exp_secs = 3600;
 const char *ntp_primary = "pool.ntp.org";
