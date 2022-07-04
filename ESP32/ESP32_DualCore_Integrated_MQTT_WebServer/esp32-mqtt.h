@@ -100,7 +100,8 @@ void connectWifi()
 
 bool publishTopic1(String data)
 {
-  return mqtt->publishTelemetryTopic1(data);
+  // return mqtt->publishTelemetryTopic1(data);
+  return mqtt->publishTelemetry(data);
 }
 
 bool publishTelemetry(String data)
@@ -136,7 +137,11 @@ void setupCloudIoT(char *project_id, char *location, char *registry_id, char *de
       private_key_str);
 
   // Wifi should be set up already
-  // setupWifi();
+
+  char *ssid = "PiNet";
+  char *password = "raspberry";
+  setupWifi(ssid, password);
+
   netClient = new WiFiClientSecure();
   netClient->setCACert(root_cert);
   google_mqttClient = new MQTTClient(512);

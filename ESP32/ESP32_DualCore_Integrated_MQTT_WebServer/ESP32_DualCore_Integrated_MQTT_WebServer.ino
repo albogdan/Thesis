@@ -103,18 +103,34 @@ void setup(void)
   setenv("TZ", "EST5EDT4,M3.2.0/02:00:00,M11.1.0/02:00:00", 1);
   tzset();
 
+  Serial.println("Trying to setup Google IOT");
+  getGoogleIoTCredentials(&credentials);
+  setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
+
   if (wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS)
   {
+    Serial.println("Wifi connection success");
     mqtt_connection_made = setupAndConnectToMqtt();
     if (!mqtt_connection_made)
       Serial.println("[ERROR] MQTT connection unsuccessful");
 
-    if (wifi_connection_status == WIFI_APSTA_CONNECTED && getGoogleIoTCredentials(&credentials))
+    if (wifi_connection_status == WIFI_APSTA_CONNECTED)
     {
+      Serial.println("Trying to setup Google IOT");
+      getGoogleIoTCredentials(&credentials);
       setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
+      mqtt_connection_made = true;
+    }
+    else
+    {
+      Serial.println("Uuable to setup Google CLoud IOT");
     }
 
     configure_time();
+  }
+  else
+  {
+    Serial.println("Wifi connection failed");
   }
   btStop();
 
@@ -141,7 +157,7 @@ void loop(void)
     Serial.println(xPortGetCoreID());
     first_loop = false;
   }
-  if (mqtt_connection_made)
+  if (true)
   {
     Serial.println("MQTT connection made");
     // mqttClient.loop();

@@ -11,7 +11,7 @@ bool setGoogleIoTCredentials(GoogleIOTCredentials *credentials)
 
   // Creating new file
   Serial.println("Creating new SPIFFS file");
-  File configFile = SPIFFS.open("/google_iot.json", "w");
+  File configFile = SPIFFS.open("/google_iot_config.json", "w");
 
   if (configFile)
   {

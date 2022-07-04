@@ -111,7 +111,8 @@ String CloudIoTCoreDevice::getConfigurationTopic()
 
 String CloudIoTCoreDevice::getEventsTopic()
 {
-  return String("/devices/") + device_id + "/events";
+  return String("/devices/") + device_id + "/events/topic_1";
+  // return String("/devices/") + device_id + "/events";
 }
 
 String CloudIoTCoreDevice::getStateTopic()
