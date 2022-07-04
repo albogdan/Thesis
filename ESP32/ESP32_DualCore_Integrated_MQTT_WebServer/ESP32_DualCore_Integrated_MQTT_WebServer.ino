@@ -159,8 +159,8 @@ void loop(void)
   }
   if (true)
   {
-    Serial.println("MQTT connection made");
-    // mqttClient.loop();
+    // Serial.println("MQTT connection made");
+    //  mqttClient.loop();
     mqtt->loop();
 
     delay(10); // <- fixes some issues with WiFi stability
@@ -177,7 +177,7 @@ void loop(void)
       Serial.println("Trying to publish message");
       if (publishTopic1(getDefaultTestData()))
       {
-        //   Serial.println("Successfully published messsage!");
+        Serial.println("Successfully published messsage!");
       }
       // else
       // {

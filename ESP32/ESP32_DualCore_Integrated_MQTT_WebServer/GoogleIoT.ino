@@ -35,10 +35,10 @@ bool setGoogleIoTCredentials(GoogleIOTCredentials *credentials)
 
 bool getGoogleIoTCredentials(GoogleIOTCredentials *credentials)
 {
-  if (SPIFFS.exists("/google_iot.json"))
+  if (SPIFFS.exists("/google_iot_config.json"))
   {
     // File exists, reading and loading
-    File configFile = SPIFFS.open("/google_iot.json", "r");
+    File configFile = SPIFFS.open("/google_iot_config.json", "r");
 
     if (configFile)
     {
