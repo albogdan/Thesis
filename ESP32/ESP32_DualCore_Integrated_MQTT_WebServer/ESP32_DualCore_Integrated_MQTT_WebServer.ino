@@ -173,12 +173,32 @@ void loop(void)
     if (millis() - lastMillis > 6000)
     {
       lastMillis = millis();
+
+      // publish live message
+
+      // changge live status and command status
+      //
+
       // publishTelemetry(mqttClient, "/sensors", getDefaultSensor());
-      Serial.println("Trying to publish message");
-      if (publishTopic1(getDefaultTestData()))
+
+      if (!is_live)
       {
-        Serial.println("Successfully published messsage!");
+        Serial.println("Trying to publish live message");
+        // Tell the Google IoT Server that you are live
+        Serial.println("Publishing live event");
+        is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"device_1\"}");
+        // publishTopic1("{isLive:true, deviceId : device_1}");
+        Serial.println("Status of published message : ");
+        Serial.print(is_live);
       }
+      else
+      {
+      }
+
+      // if (publishTopic1(getDefaultTestData()))
+      // {
+      //   Serial.println("Successfully published messsage!");
+      // }
       // else
       // {
       //   Serial.println("Failed to publish messsage!");
@@ -186,7 +206,7 @@ void loop(void)
       // publishTelemetry();
     }
 
-    //    loop_and_check_mqtt_connection();
+    // loop_and_check_mqtt_connection();
   }
 
   // Check if we received a complete string through SerialArduino

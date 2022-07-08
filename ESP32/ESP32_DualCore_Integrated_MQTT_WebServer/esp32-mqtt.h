@@ -13,24 +13,33 @@
  * limitations under the License.
  *****************************************************************************/
 // This file contains static methods for API requests using Wifi / MQTT
-#include <CloudIoTCoreMqtt.h>
+
 #include <Client.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
 
-#include <CloudIoTCore.h>
+#include "src/CloudIoTCoreMqtt.h"
+#include "src/CloudIoTCore.h"
 
 const int jwt_exp_secs = 3600;
 const char *ntp_primary = "pool.ntp.org";
 const char *ntp_secondary = "time.nist.gov";
+
+bool is_live = false;
 
 // !!REPLACEME!!
 // The MQTT callback function for commands and configuration updates
 // Place your message handler code here.
 void messageReceived(String &topic, String &payload)
 {
-  Serial.println("incoming: " + topic + " - " + payload);
+
+  if (is_live)
+  {
+    Serial.println("Responding to incoming: " + topic + " - " + payload);
+  }
+
+  // once youve sent a live message process get the command, formulate the answer and publish a message in response.
 }
 ///////////////////////////////
 
@@ -100,8 +109,8 @@ void connectWifi()
 
 bool publishTopic1(String data)
 {
-  // return mqtt->publishTelemetryTopic1(data);
-  return mqtt->publishTelemetry(data);
+  return mqtt->publishTelemetryTopic1(data);
+  // return mqtt->publishTelemetry(data);
 }
 
 bool publishTelemetry(String data)
