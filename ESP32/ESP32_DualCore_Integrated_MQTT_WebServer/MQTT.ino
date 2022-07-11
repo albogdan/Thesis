@@ -1,10 +1,12 @@
 #include <ESP32Ping.h>
+#include "esp32-mqtt.h"
 
 long lastReconnectAttempt = 0;
 IPAddress server_ip_address; // The remote ip to ping
 
 bool setupAndConnectToMqtt()
 {
+
   Serial.println("[INFO] Getting MQTT server credentials");
   MQTTCredentials credentials;
   if (getMQTTCredentials(&credentials))
@@ -12,18 +14,18 @@ bool setupAndConnectToMqtt()
     Serial.println("[SETUP] Checking if MQTT server exists");
 
     server_ip_address.fromString(credentials.server_ip);
-    bool ping_success;
-    if (uplink_connection_mode == UPLINK_MODE_WIFI)
-    {
+
+    bool ping_success = true;
+    /*if (uplink_connection_mode == UPLINK_MODE_WIFI) {
       ping_success = Ping.ping(server_ip_address, 2);
     }
     else
     {
       ping_success = true; // TODO: IMPLEMENT PING FOR THE CELLULAR SHIELD
-    }
+
+    }*/
     if (ping_success)
     {
-
       setupMqtt(credentials.server_ip, credentials.port);
 
       return connectToMqtt(credentials.username, credentials.password);
@@ -34,6 +36,7 @@ bool setupAndConnectToMqtt()
       return false;
     }
   }
+
   return false;
 }
 
@@ -61,7 +64,7 @@ boolean connectToMqtt(char *username, char *password)
   { //, mqttUser, mqttPassword )) {
     Serial.print("[INFO] MAC: ");
     Serial.println(WiFi.macAddress());
-    Serial.println("[SETUP] Connected to MQTT!\n");
+    Serial.println("[SETUP] Connected to MQTT!mqttSubscribeToTopics\n");
     mqttSubscribeToTopics(&mqttClient);
     return true;
   }
@@ -76,23 +79,30 @@ boolean connectToMqtt(char *username, char *password)
 
 void loop_and_check_mqtt_connection()
 {
-  if (!mqttClient.connected())
+
+  if (use_google_iot)
   {
-    long now_mqtt = millis();
-    if (now_mqtt - lastReconnectAttempt > 10000L)
-    {
-      lastReconnectAttempt = now_mqtt;
-      // Attempt to reconnect
-      mqtt_connection_made = setupAndConnectToMqtt();
-      if (mqtt_connection_made)
-      {
-        lastReconnectAttempt = 0;
-      }
-    }
   }
   else
   {
-    mqttClient.loop();
+    if (!mqttClient.connected())
+    {
+      long now_mqtt = millis();
+      if (now_mqtt - lastReconnectAttempt > 10000L)
+      {
+        lastReconnectAttempt = now_mqtt;
+        // Attempt to reconnect
+        mqtt_connection_made = setupAndConnectToMqtt();
+        if (mqtt_connection_made)
+        {
+          lastReconnectAttempt = 0;
+        }
+      }
+    }
+    else
+    {
+      mqttClient.loop();
+    }
   }
 }
 
@@ -169,8 +179,8 @@ bool getMQTTCredentials(MQTTCredentials *credentials)
 
 void mqttSubscribeToTopics(PubSubClient *mqttClient)
 {
-  mqttClient->subscribe("ping");
 
+  mqttClient->subscribe("ping");
   // All subscriptions should be of the form {HOSTNAME/endpoint}
   mqttClient->subscribe("ESP32_LORA/test"); // Subscribe function only takes char*, not String
 }
@@ -205,7 +215,8 @@ void callbackMqtt(char *topic, byte *payload, unsigned int length)
 }
 
 // Returns a ping with information about the system
-void return_ping()
+
+String generate_ping_data()
 {
   String message;
   const size_t capacity = JSON_OBJECT_SIZE(8);
@@ -217,23 +228,18 @@ void return_ping()
   doc["current_ssid"] = WiFi.SSID();
 
   serializeJson(doc, message);
+  return message;
+}
+
+void return_ping()
+{
 
   String topic = "ping/response/" + HOSTNAME;
 
-  char topic_output[topic.length() + 1];
-  char message_output[message.length() + 1];
-
-  topic.toCharArray(topic_output, topic.length() + 1);
-  message.toCharArray(message_output, message.length() + 1);
-
-  Serial.print("Replying with: ");
-  Serial.println(message);
-  mqttClient.publish(topic_output, message_output);
-
-  yield();
+  publish_data(topic, generate_ping_data());
 }
 
-void publish_arduino_data(String arduino_data)
+String generate_arduino_data(String arduino_data)
 {
   String message;
   const size_t capacity = JSON_OBJECT_SIZE(4);
@@ -243,23 +249,21 @@ void publish_arduino_data(String arduino_data)
   doc["data_2"] = arduino_data.substring(arduino_data.indexOf(',') + 1, arduino_data.indexOf('\r'));
 
   serializeJson(doc, message);
-
-  String topic = "data/" + HOSTNAME;
-
-  char topic_char_array[topic.length() + 1];
-  char message_char_array[message.length() + 1];
-
-  topic.toCharArray(topic_char_array, topic.length() + 1);
-  message.toCharArray(message_char_array, message.length() + 1);
-
-  Serial.print("Publishing to MQTT: ");
-  Serial.println(message);
-  mqttClient.publish(topic_char_array, message_char_array);
-
-  yield();
+  return message;
 }
 
-void publish_test_data()
+void publish_arduino_data(String arduino_data)
+{
+  publish_data(get_host_topic(), generate_arduino_data(arduino_data));
+}
+
+String get_host_topic()
+{
+  String topic = "data/" + HOSTNAME;
+  return topic;
+}
+
+String generate_test_data()
 {
   String payload = "Test message";
   String message;
@@ -277,17 +281,28 @@ void publish_test_data()
   doc["data"] = payload;
 
   serializeJson(doc, message);
-  String topic = "data/" + HOSTNAME;
-  char topic_char_array[topic.length() + 1];
-  char message_char_array[message.length() + 1];
+  return message;
+}
 
+void publish_default_test_data()
+{
+  publish_data(get_host_topic(), generate_test_data());
+}
+
+void publish_data(String topic, String message)
+{
+  char topic_char_array[topic.length() + 1];
   topic.toCharArray(topic_char_array, topic.length() + 1);
+
+  char message_char_array[message.length() + 1];
   message.toCharArray(message_char_array, message.length() + 1);
+
   Serial.print("Publishing to MQTT topic ' ");
   Serial.print(topic);
   Serial.print(" ':");
   Serial.println(message);
   Serial.println();
+
   mqttClient.publish(topic_char_array, message_char_array);
 
   yield();

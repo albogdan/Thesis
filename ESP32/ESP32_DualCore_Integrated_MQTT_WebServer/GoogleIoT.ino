@@ -1,4 +1,24 @@
 #include "main.h"
+#include <ESP32Ping.h>
+#include "esp32-mqtt.h"
+
+bool google_setupAndConnectToMqtt()
+{
+
+  if (getGoogleIoTCredentials(&credentials))
+  {
+    setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
+    return true;
+  }
+  return false;
+}
+
+void google_mqttSubscribeToTopics()
+{
+  // mqtt->subscribeCommandsTopic("/#", 1);
+  // mqtt->subscribeConfigTopic(1);
+  // mqtt->onConnect();
+}
 
 bool setGoogleIoTCredentials(GoogleIOTCredentials *credentials)
 {
@@ -85,4 +105,31 @@ bool getGoogleIoTCredentials(GoogleIOTCredentials *credentials)
     Serial.println("[INFO] No config file found");
   }
   return false;
+}
+
+void google_loop_and_check_mqtt_connection()
+{
+
+  mqtt->loop();
+  delay(10);
+
+  if (!google_mqttClient->connected())
+  {
+    connect();
+  }
+
+  if (!is_live)
+  {
+    Serial.println("Trying to come alive");
+    // Tell the Google IoT Server that you are live
+    Serial.println("Publishing live event");
+    is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"device_1\"}");
+    // // publishTopic1("{isLive:true, deviceId : device_1}");
+    // Serial.println("Status of published message : ");
+    // Serial.print(is_live);
+  }
+  else
+  {
+    // Serial.println("Is already alive");
+  }
 }

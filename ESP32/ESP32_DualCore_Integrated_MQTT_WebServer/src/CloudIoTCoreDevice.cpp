@@ -94,6 +94,11 @@ String CloudIoTCoreDevice::getCommandsTopic()
   return String("/devices/") + device_id + "/commands/#";
 }
 
+String CloudIoTCoreDevice::getCommandTopic()
+{
+  return String("/devices/") + device_id + "/commands";
+}
+
 String CloudIoTCoreDevice::getDeviceId()
 {
   return String(device_id);

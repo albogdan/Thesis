@@ -106,11 +106,20 @@ void CloudIoTCoreMqtt::mqttConnect(bool skip)
 
   // Set QoS to 1 (ack) for configuration messages
   this->mqttClient->subscribe(device->getConfigTopic(), 1);
-
   // QoS 0 (no ack) for commands
   this->mqttClient->subscribe(device->getCommandsTopic(), 1);
-
   onConnect();
+}
+
+void CloudIoTCoreMqtt::subscribeCommandsTopic(String topic, int qos)
+{
+  Serial.println("Command topic to suscribe to " + this->device->getCommandTopic() + topic);
+  this->mqttClient->subscribe(this->device->getCommandTopic() + topic, qos);
+}
+
+void CloudIoTCoreMqtt::subscribeConfigTopic(int qos)
+{
+  this->mqttClient->subscribe(device->getConfigTopic(), qos);
 }
 
 void CloudIoTCoreMqtt::mqttConnectAsync(bool skip)
@@ -169,13 +178,13 @@ void CloudIoTCoreMqtt::mqttConnectAsync(bool skip)
     }
   }
 
-  // Set QoS to 1 (ack) for configuration messages
-  this->mqttClient->subscribe(device->getConfigTopic(), 1);
+  // // Set QoS to 1 (ack) for configuration messages
+  // this->mqttClient->subscribe(device->getConfigTopic(), 1);
 
-  // QoS 0 (no ack) for commands
-  this->mqttClient->subscribe(device->getCommandsTopic(), 0);
+  // // QoS 0 (no ack) for commands
+  // this->mqttClient->subscribe(device->getCommandsTopic(), 0);
 
-  onConnect();
+  // onConnect();
 }
 
 void CloudIoTCoreMqtt::startMQTT()

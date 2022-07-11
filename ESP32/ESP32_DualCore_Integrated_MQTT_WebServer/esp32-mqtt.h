@@ -13,12 +13,14 @@
  * limitations under the License.
  *****************************************************************************/
 // This file contains static methods for API requests using Wifi / MQTT
+#ifndef __ESP32_MQTT_H__
+#define __ESP32_MQTT_H__
 
 #include <Client.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <MQTT.h>
-
+#include <Regexp.h>
 #include "src/CloudIoTCoreMqtt.h"
 #include "src/CloudIoTCore.h"
 
@@ -28,16 +30,50 @@ const char *ntp_secondary = "time.nist.gov";
 
 bool is_live = false;
 
+bool publishTopic1(String data);
+
 // !!REPLACEME!!
 // The MQTT callback function for commands and configuration updates
 // Place your message handler code here.
 void messageReceived(String &topic, String &payload)
 {
 
-  if (is_live)
+  char topic_char_array[topic.length() + 1];
+  topic.toCharArray(topic_char_array, topic.length() + 1);
+
+  Serial.println("Responding to incoming: " + topic + " - " + payload);
+  MatchState ms;
+  ms.Target(topic_char_array);
+  char result = ms.Match("/commands/(.+)");
+  Serial.println("Found match result :  " + result);
+
+  Serial.print("Captures: ");
+  Serial.println(ms.level);
+
+  // char buf[100]; // large enough to hold expected string
+  // Serial.print("Matched on: ");
+
+  for (int j = 0; j < ms.level; j++)
   {
-    Serial.println("Responding to incoming: " + topic + " - " + payload);
-  }
+    Serial.print("Capture number: ");
+    Serial.println(j);
+    Serial.print("Text: ");
+    String topic_recieved = String(ms.GetCapture(topic_char_array, j));
+
+    if (topic_recieved == HOSTNAME + "/test")
+    {
+
+      Serial.println("Recieved a " + HOSTNAME + "/test message");
+
+      publishTopic1("{\"type\":\"response_to_test_command\", \"host_name\" : \"" + HOSTNAME + "\"}");
+    }
+
+    else if (topic_recieved == "ping")
+    {
+      Serial.println("Recieved a ping message");
+    }
+
+  } // end of for each capture
 
   // once youve sent a live message process get the command, formulate the answer and publish a message in response.
 }
@@ -77,7 +113,7 @@ void setupWifi(char *ssid, char *password)
   Serial.println("Starting wifi");
 
   WiFi.mode(WIFI_STA);
-  // WiFi.setSleep(false); // May help with disconnect? Seems to have been removed from WiFi
+  WiFi.setSleep(false); // May help with disconnect? Seems to have been removed from WiFi
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED)
@@ -159,3 +195,5 @@ void setupCloudIoT(char *project_id, char *location, char *registry_id, char *de
   mqtt->setUseLts(true);
   mqtt->startMQTT();
 }
+
+#endif // __ESP32_MQTT_H__

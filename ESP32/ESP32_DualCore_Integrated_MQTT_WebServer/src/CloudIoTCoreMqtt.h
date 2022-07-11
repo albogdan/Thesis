@@ -44,6 +44,9 @@ public:
   void startMQTT();
   void startMQTTAdvanced();
 
+  void subscribeCommandsTopic(String topic, int qos);
+  void subscribeConfigTopic(int qos);
+
   bool publishTelemetry(const String &data);
   bool publishTelemetry(const String &data, int qos);
   bool publishTelemetry(const char *data, int length);

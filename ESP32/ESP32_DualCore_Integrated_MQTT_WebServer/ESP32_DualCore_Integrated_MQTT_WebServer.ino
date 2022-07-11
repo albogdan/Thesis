@@ -8,6 +8,7 @@ unsigned int cellular_connection_status = false;
 unsigned int uplink_connection_mode;
 
 PubSubClient mqttClient;
+
 unsigned long lastMillis = 0;
 
 TaskHandle_t CottonCandyGateway;
@@ -103,35 +104,31 @@ void setup(void)
   setenv("TZ", "EST5EDT4,M3.2.0/02:00:00,M11.1.0/02:00:00", 1);
   tzset();
 
-  Serial.println("Trying to setup Google IOT");
-  getGoogleIoTCredentials(&credentials);
-  setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
-
-  if (wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS)
+  if (!use_google_iot)
   {
-    Serial.println("Wifi connection success");
-    mqtt_connection_made = setupAndConnectToMqtt();
-    if (!mqtt_connection_made)
-      Serial.println("[ERROR] MQTT connection unsuccessful");
 
-    if (wifi_connection_status == WIFI_APSTA_CONNECTED)
+    if (wifi_connection_status == WIFI_APSTA_CONNECTED || cellular_connection_status == CELLULAR_CONNECTION_SUCCESS)
     {
-      Serial.println("Trying to setup Google IOT");
-      getGoogleIoTCredentials(&credentials);
-      setupCloudIoT(credentials.project_id, credentials.location, credentials.registry_id, credentials.device_id, credentials.private_key_str, credentials.root_cert);
-      mqtt_connection_made = true;
+      Serial.println("Wifi connection success");
+      mqtt_connection_made = setupAndConnectToMqtt();
+      if (!mqtt_connection_made)
+        Serial.println("[ERROR] MQTT connection unsuccessful");
+
+      configure_time();
     }
     else
     {
-      Serial.println("Uuable to setup Google CLoud IOT");
+      Serial.println("Wifi connection failed");
     }
-
-    configure_time();
   }
   else
   {
-    Serial.println("Wifi connection failed");
+    mqtt_connection_made = google_setupAndConnectToMqtt();
+    google_mqttSubscribeToTopics();
+
+    Serial.println("Trying to setup Google IOT");
   }
+
   btStop();
 
   if (false)
@@ -161,14 +158,18 @@ void loop(void)
   {
     // Serial.println("MQTT connection made");
     //  mqttClient.loop();
-    mqtt->loop();
+
+    if (use_google_iot)
+    {
+      // Serial.println("Is looping and connecting google iot");
+      google_loop_and_check_mqtt_connection();
+    }
+    else
+    {
+      mqtt->loop();
+    }
 
     delay(10); // <- fixes some issues with WiFi stability
-
-    if (!google_mqttClient->connected())
-    {
-      connect();
-    }
 
     if (millis() - lastMillis > 6000)
     {
@@ -181,19 +182,19 @@ void loop(void)
 
       // publishTelemetry(mqttClient, "/sensors", getDefaultSensor());
 
-      if (!is_live)
-      {
-        Serial.println("Trying to publish live message");
-        // Tell the Google IoT Server that you are live
-        Serial.println("Publishing live event");
-        is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"device_1\"}");
-        // publishTopic1("{isLive:true, deviceId : device_1}");
-        Serial.println("Status of published message : ");
-        Serial.print(is_live);
-      }
-      else
-      {
-      }
+      // if (!is_live)
+      // {
+      //   Serial.println("Would publish live message");
+      //   // Tell the Google IoT Server that you are live
+      //   Serial.println("Publishing live event");
+      //   is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"device_1\"}");
+      //   // // publishTopic1("{isLive:true, deviceId : device_1}");
+      //   // Serial.println("Status of published message : ");
+      //   // Serial.print(is_live);
+      // }
+      // else
+      // {
+      // }
 
       // if (publishTopic1(getDefaultTestData()))
       // {

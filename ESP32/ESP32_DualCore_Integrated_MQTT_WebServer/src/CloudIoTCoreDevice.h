@@ -64,6 +64,7 @@ public:
   /* MQTT methods */
   String getClientId();
   String getCommandsTopic();
+  String getCommandTopic();
   String getConfigTopic();
   String getDeviceId();
   String getEventsTopic();

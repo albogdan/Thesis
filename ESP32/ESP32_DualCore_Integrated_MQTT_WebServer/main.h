@@ -30,22 +30,27 @@ bool SLEEP_ENABLED = false;
 const char *ap_ssid = "ESP32AP";
 const char *ap_password = "12344321";
 
-typedef struct wifi_credentials{
+bool use_google_iot = true;
+
+typedef struct wifi_credentials
+{
     char ssid[20];
     char identity[30];
     char password[50];
 } WiFiCredentials;
 
-typedef struct mqtt_credentials{
+typedef struct mqtt_credentials
+{
     char server_ip[20];
     char port[6];
     char username[30];
-    char password [50];
+    char password[50];
 } MQTTCredentials;
 
 char network_id[8];
 
-typedef struct google_iot_credentials{
+typedef struct google_iot_credentials
+{
     char project_id[64];
     char location[32];
     char registry_id[32];
@@ -54,15 +59,15 @@ typedef struct google_iot_credentials{
     char root_cert[1024];
 } GoogleIOTCredentials;
 
-
 /* ----- BEGIN PACKET INFORMATION AND DEFINITIONS ----- */
 //              Message parts and sizes diagram
 // |  src  |  message len  |  gateway addr  | other info |  data  |
 // |  2B   |      1B       |       2B       |     2B     |  0-64B |
-typedef struct packet {
-  byte src[2];
-  unsigned int message_length;
-  float data_value;
+typedef struct packet
+{
+    byte src[2];
+    unsigned int message_length;
+    float data_value;
 } Packet;
 
 /* Questions:
@@ -71,10 +76,10 @@ typedef struct packet {
  */
 /* ----- END PACKET INFORMATION AND DEFINITIONS ----- */
 /* ----- BEGIN SERIAL SETTINGS ----- */
-// The maximum size of a message - this is calculated from the 
+// The maximum size of a message - this is calculated from the
 // message metadata plus data max size. See diagram above.
-#define MAX_PAYLOAD_SIZE 5+512
-byte input_byte_array[3*MAX_PAYLOAD_SIZE]; // Extra large just in case
+#define MAX_PAYLOAD_SIZE 5 + 512
+byte input_byte_array[3 * MAX_PAYLOAD_SIZE]; // Extra large just in case
 
 unsigned int input_byte_array_index = 0;
 bool byte_array_complete = false;
@@ -83,20 +88,18 @@ bool byte_array_complete = false;
 
 /* ----- BEGIN TIME VARIABLES ----- */
 /* Timer related defines */
-#define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
-#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
+#define TIMER_DIVIDER (16)                           //  Hardware timer clock divider
+#define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER) // convert counter value to seconds
 
-#define SLEEP_TIMER_SECONDS 7 // Amount of time to wait until trying to go into hibernation mode
-#define RTC_GPIO_WAKEUP_PIN GPIO_NUM_4        // D4
-#define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_5   // D5
-
+#define SLEEP_TIMER_SECONDS 7               // Amount of time to wait until trying to go into hibernation mode
+#define RTC_GPIO_WAKEUP_PIN GPIO_NUM_4      // D4
+#define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_5 // D5
 
 time_t now;
 char strftime_buf[64];
 struct tm timeinfo;
 
 /* ----- END TIME VARIABLES ----- */
-
 
 /* ----- BEGIN CELLULAR CONNECTION VARIABLES ----- */
 #define TINY_GSM_MODEM_SIM7600
@@ -127,12 +130,11 @@ PubSubClient mqttClientCellular(cellular_client);
 #define GSM_AUTOBAUD_MAX 115200
 #define GSM_BAUD_RATE 57600
 
-const char apn[]      = "iot.truphone.com";
+const char apn[] = "iot.truphone.com";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
 /* ----- END CELLULAR CONNECTION VARIABLES ----- */
-
 
 WiFiClient espClient;
 PubSubClient mqttClientWiFi(espClient);
