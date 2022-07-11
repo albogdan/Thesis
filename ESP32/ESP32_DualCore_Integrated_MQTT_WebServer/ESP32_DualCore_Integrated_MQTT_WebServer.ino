@@ -109,7 +109,7 @@ void setup(void)
   }
   btStop();
 
-  if (false) {
+  if (SLEEP_ENABLED) {
     // Initialize the sleep timer CHANGE THIS TO ALSO HAPPEN WHEN CELLULAR IS CONNECTED
     Serial.println("[INFO] Initializing sleep timer");
     initialize_sleep_timer(SLEEP_TIMER_SECONDS);
@@ -123,6 +123,8 @@ void setup(void)
 }
 
 bool first_loop = true;
+long firstPacketReceived = 0;
+long now_serial = 0;
 
 void loop(void)
 {
@@ -146,6 +148,10 @@ void loop(void)
     // Clear the byte array: reset the index pointer
     input_byte_array_index = 0;
     byte_array_complete = false;
+
+    // Clear the timer
+    now_serial = 0;
+    firstPacketReceived = 0;
   }
   /*
   // Check if there's anything in the SerialArduino buffer
@@ -167,16 +173,30 @@ void loop(void)
     }
   }
   */
+  if (input_byte_array_index > 0) { // Keep time only if src received
+      now_serial = millis();
+  }
+  if (now_serial - firstPacketReceived > 500L) // After 0.5s reset buffer
+  {
+      now_serial = 0;
+      firstPacketReceived = 0;
+      input_byte_array_index = 0;
+      Serial.println("[INFO] Serial timeout. Resetting buffer");
+  }
+  
 
   while (SerialArduino.available()) {
+    //Serial.println("SERIAL AVAILABLE");
     if (input_byte_array_index < 2) { // Receive the src
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
+      firstPacketReceived = millis();
       Serial.println("[INFO] src complete");
     } else if (input_byte_array_index == 2) { // Receive the length
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;
-      Serial.println("[INFO] len complete");
+      Serial.print("[INFO] len complete: ");
+      Serial.println(input_byte_array[input_byte_array_index]);
     } else if (input_byte_array_index > 2 && input_byte_array_index < input_byte_array[2] + 2) { // Receive the data
       input_byte_array[input_byte_array_index] = (byte)SerialArduino.read();
       input_byte_array_index += 1;

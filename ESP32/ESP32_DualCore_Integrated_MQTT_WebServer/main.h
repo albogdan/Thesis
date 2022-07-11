@@ -28,7 +28,7 @@
 #define UPLINK_MODE_CELLULAR 2
 
 String HOSTNAME = "ESP32_LORA";
-bool SLEEP_ENABLED = false;
+bool SLEEP_ENABLED = true;
 
 /* The default SSID and password for the access point */
 const char *ap_ssid = "ESP32AP";
@@ -91,8 +91,8 @@ bool byte_array_complete = false;
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
 #define SLEEP_TIMER_SECONDS 7 // Amount of time to wait until trying to go into hibernation mode
-#define RTC_GPIO_WAKEUP_PIN GPIO_NUM_4        // D4
-#define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_5   // D5 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
+#define RTC_GPIO_WAKEUP_PIN GPIO_NUM_27 // GPIO27 //GPIO_NUM_4        // D4
+#define ARDUINO_SIGNAL_READY_PIN GPIO_NUM_26 // GPIO26 //GPIO_NUM_5   // D5 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
 
 
 time_t now;
@@ -108,8 +108,8 @@ struct tm timeinfo;
 #include <SoftwareSerial.h>
 
 // Define the pins for the Arduino serial port
-#define RXD2 18 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
-#define TXD2 19 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
+#define RXD2 35 //D2 //18 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
+#define TXD2 34 //D4 //19 // TODO: REMAP PIN BECAUSE SD CARD IS USING IT
 #define ARDUINO_BAUD_RATE 19200
 
 // Define the pins for the Cellular serial port
