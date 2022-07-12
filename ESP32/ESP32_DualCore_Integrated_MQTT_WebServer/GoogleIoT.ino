@@ -123,7 +123,7 @@ void google_loop_and_check_mqtt_connection()
     Serial.println("Trying to come alive");
     // Tell the Google IoT Server that you are live
     Serial.println("Publishing live event");
-    is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"device_1\"}");
+    is_live = publishTelemetry("/live", "{\"isLive\":true, \"deviceId\" : \"" + HOSTNAME + "\"}");
     // // publishTopic1("{isLive:true, deviceId : device_1}");
     // Serial.println("Status of published message : ");
     // Serial.print(is_live);
